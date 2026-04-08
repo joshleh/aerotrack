@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+.venv
+.pycache
+__pycache__
+.pytest_cache
+.ipynb_checkpoints
+data
+mlruns
+runs
+outputs
+artifacts
+*.pyc
+*.pyo
+*.pyd

@@ -94,7 +94,7 @@ AEROTRACK_OUTPUT_DIR=/app/outputs
 MLFLOW_TRACKING_URI=http://mlflow:5000
 MLFLOW_EXPERIMENT_NAME=aerotrack-yolov8
 MLFLOW_MODEL_NAME=aerotrack-detector
-MLFLOW_BACKEND_STORE_URI=sqlite:///mlflow/mlflow.db
+MLFLOW_BACKEND_STORE_URI=sqlite:////mlflow/mlflow.db
 MLFLOW_ARTIFACT_ROOT=/mlflow/artifacts
 ```
 
@@ -204,7 +204,7 @@ Response shape:
 
 ## MLflow
 
-After `docker-compose up`, open [http://localhost:5000](http://localhost:5000) to inspect experiments, compare runs, and browse the registered `aerotrack-detector` model versions.
+After `docker-compose up`, open [http://localhost:5001](http://localhost:5001) to inspect experiments, compare runs, and browse the registered `aerotrack-detector` model versions.
 
 ## Notes
 
