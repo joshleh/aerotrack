@@ -1,0 +1,39 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      API_HOST: ${API_HOST}
+      API_PORT: ${API_PORT}
+      AEROTRACK_MODEL_PATH: ${AEROTRACK_MODEL_PATH}
+      AEROTRACK_DEVICE: ${AEROTRACK_DEVICE}
+      AEROTRACK_CONFIDENCE: ${AEROTRACK_CONFIDENCE}
+      AEROTRACK_IOU: ${AEROTRACK_IOU}
+      AEROTRACK_OUTPUT_DIR: ${AEROTRACK_OUTPUT_DIR}
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    volumes:
+      - model-artifacts:${AEROTRACK_OUTPUT_DIR}
+    depends_on:
+      - mlflow
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: mlflow/mlflow.dockerfile
+    env_file:
+      - .env
+    environment:
+      MLFLOW_BACKEND_STORE_URI: ${MLFLOW_BACKEND_STORE_URI}
+      MLFLOW_ARTIFACT_ROOT: ${MLFLOW_ARTIFACT_ROOT}
+    ports:
+      - "5000:5000"
+    volumes:
+      - model-artifacts:${MLFLOW_ARTIFACT_ROOT}
+
+volumes:
+  model-artifacts:
