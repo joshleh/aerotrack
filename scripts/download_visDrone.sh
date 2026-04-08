@@ -15,12 +15,11 @@ download_file() {
   local output="$2"
 
   if [[ -f "${output}" ]]; then
-    echo "Skipping existing archive: ${output}"
-    return
+    echo "Resuming or validating existing archive: ${output}"
   fi
 
   echo "Downloading ${url}"
-  curl -L --fail --retry 3 "${url}" -o "${output}"
+  curl -L --fail --retry 3 -C - "${url}" -o "${output}"
 }
 
 extract_file() {
@@ -36,16 +35,36 @@ extract_file() {
   unzip -q "${archive}" -d "${RAW_DIR}"
 }
 
-download_file "https://github.com/VisDrone/VisDrone-Dataset/releases/download/v1.0/VisDrone2019-DET-train.zip" "${TMP_DIR}/VisDrone2019-DET-train.zip"
-download_file "https://github.com/VisDrone/VisDrone-Dataset/releases/download/v1.0/VisDrone2019-DET-val.zip" "${TMP_DIR}/VisDrone2019-DET-val.zip"
-download_file "https://github.com/VisDrone/VisDrone-Dataset/releases/download/v1.0/VisDrone2019-DET-test-dev.zip" "${TMP_DIR}/VisDrone2019-DET-test-dev.zip"
+ensure_split() {
+  local url="$1"
+  local archive="$2"
+  local target="$3"
 
-extract_file "${TMP_DIR}/VisDrone2019-DET-train.zip" "${RAW_DIR}/VisDrone2019-DET-train"
-extract_file "${TMP_DIR}/VisDrone2019-DET-val.zip" "${RAW_DIR}/VisDrone2019-DET-val"
-extract_file "${TMP_DIR}/VisDrone2019-DET-test-dev.zip" "${RAW_DIR}/VisDrone2019-DET-test-dev"
+  if [[ -d "${target}" ]]; then
+    echo "Skipping download and extract for existing split: ${target}"
+    return
+  fi
+
+  download_file "${url}" "${archive}"
+  extract_file "${archive}" "${target}"
+}
+
+ensure_split \
+  "https://github.com/ultralytics/yolov5/releases/download/v1.0/VisDrone2019-DET-train.zip" \
+  "${TMP_DIR}/VisDrone2019-DET-train.zip" \
+  "${RAW_DIR}/VisDrone2019-DET-train"
+ensure_split \
+  "https://github.com/ultralytics/yolov5/releases/download/v1.0/VisDrone2019-DET-val.zip" \
+  "${TMP_DIR}/VisDrone2019-DET-val.zip" \
+  "${RAW_DIR}/VisDrone2019-DET-val"
+ensure_split \
+  "https://github.com/ultralytics/yolov5/releases/download/v1.0/VisDrone2019-DET-test-dev.zip" \
+  "${TMP_DIR}/VisDrone2019-DET-test-dev.zip" \
+  "${RAW_DIR}/VisDrone2019-DET-test-dev"
 
 ROOT_DIR_ENV="${ROOT_DIR}" python3 - <<'PY'
 import os
+import struct
 import shutil
 from pathlib import Path
 
@@ -66,6 +85,41 @@ CLASS_NAMES = [
     "bus",
     "motor",
 ]
+
+
+def get_image_size(image_path: Path) -> tuple[int, int]:
+    with image_path.open("rb") as handle:
+        signature = handle.read(26)
+
+    if signature.startswith(b"\211PNG\r\n\032\n"):
+        width, height = struct.unpack(">II", signature[16:24])
+        return width, height
+
+    if signature[:2] == b"\xff\xd8":
+        with image_path.open("rb") as handle:
+            handle.read(2)
+            while True:
+                marker_start = handle.read(1)
+                if marker_start != b"\xff":
+                    raise ValueError(f"Invalid JPEG marker in {image_path}")
+
+                marker = handle.read(1)
+                while marker == b"\xff":
+                    marker = handle.read(1)
+
+                if marker in {b"\xc0", b"\xc1", b"\xc2", b"\xc3", b"\xc5", b"\xc6", b"\xc7", b"\xc9", b"\xca", b"\xcb", b"\xcd", b"\xce", b"\xcf"}:
+                    segment_length = struct.unpack(">H", handle.read(2))[0]
+                    precision = handle.read(1)
+                    height, width = struct.unpack(">HH", handle.read(4))
+                    return width, height
+
+                if marker in {b"\xd8", b"\xd9"}:
+                    continue
+
+                segment_length = struct.unpack(">H", handle.read(2))[0]
+                handle.seek(segment_length - 2, 1)
+
+    raise ValueError(f"Unsupported image format: {image_path}")
 
 
 def ensure_empty_dir(path: Path) -> None:
@@ -105,18 +159,22 @@ for split in ("train", "val"):
         if not image_path.exists():
             continue
 
-        import cv2
-
-        image = cv2.imread(str(image_path))
-        if image is None:
+        try:
+            width, height = get_image_size(image_path)
+        except ValueError:
             continue
-        height, width = image.shape[:2]
 
         yolo_lines = []
         for line in annotation_path.read_text().splitlines():
             if not line.strip():
                 continue
-            x, y, w, h, score, category, truncation, occlusion = map(int, line.split(","))
+            parts = [part.strip() for part in line.split(",")]
+            while parts and parts[-1] == "":
+                parts.pop()
+            if len(parts) < 8:
+                continue
+
+            x, y, w, h, score, category, truncation, occlusion = map(int, parts[:8])
             if category == 0 or score == 0:
                 continue
 
@@ -145,4 +203,3 @@ print(f"Prepared YOLO dataset at {YOLO_DIR}")
 PY
 
 echo "VisDrone download and conversion complete."
-
