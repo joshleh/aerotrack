@@ -1,0 +1,17 @@
+{
+  "detections": [
+    {
+      "bbox": [460.31, 362.65, 513.36, 433.12],
+      "class_id": 2,
+      "class_label": "car",
+      "confidence": 0.8361
+    },
+    {
+      "bbox": [418.53, 703.6, 440.69, 762.7],
+      "class_id": 0,
+      "class_label": "person",
+      "confidence": 0.726
+    }
+  ]
+}
+

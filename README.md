@@ -108,9 +108,14 @@ aerotrack/
 │   ├── train.py
 │   └── utils.py
 ├── docs/
-│   └── demo.md
+│   ├── demo.md
+│   └── deploy.md
+├── examples/
+│   ├── detect_response.json
+│   └── track_response.json
 ├── .dockerignore
 ├── .env.example
+├── .env.production.example
 ├── .gitignore
 ├── Dockerfile
 ├── docker-compose.yml
@@ -333,6 +338,16 @@ For a tighter presentation outline, use [docs/demo.md](/Users/joshu/aerotrack/do
 - `.env` is ignored by Git
 - `data/`, `runs/`, `mlruns/`, and local artifacts are excluded from version control
 - Docker build context is trimmed with [`.dockerignore`](/Users/joshu/aerotrack/.dockerignore)
+- Docker services include healthchecks for both the API and MLflow
+
+## Deployment notes
+
+For deployment-oriented guidance, see [docs/deploy.md](/Users/joshu/aerotrack/docs/deploy.md).
+
+Additional deployment helpers:
+
+- production-oriented env template: [.env.production.example](/Users/joshu/aerotrack/.env.production.example)
+- saved sample API responses: [examples/detect_response.json](/Users/joshu/aerotrack/examples/detect_response.json), [examples/track_response.json](/Users/joshu/aerotrack/examples/track_response.json)
 
 ## Supporting files
 
@@ -342,4 +357,5 @@ For a tighter presentation outline, use [docs/demo.md](/Users/joshu/aerotrack/do
 - Tracking pipeline: [src/track.py](/Users/joshu/aerotrack/src/track.py)
 - FastAPI application: [api/main.py](/Users/joshu/aerotrack/api/main.py)
 - Demo guide: [docs/demo.md](/Users/joshu/aerotrack/docs/demo.md)
+- Deployment guide: [docs/deploy.md](/Users/joshu/aerotrack/docs/deploy.md)
 - Smoke-test clip helper: [scripts/make_smoke_clip.py](/Users/joshu/aerotrack/scripts/make_smoke_clip.py)

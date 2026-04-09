@@ -1,0 +1,28 @@
+{
+  "frames": [
+    {
+      "frame_index": 0,
+      "objects": [
+        {
+          "track_id": 1,
+          "bbox": [460.49, 363.12, 513.71, 434.24],
+          "class_id": 2,
+          "class_label": "car",
+          "confidence": 0.8344
+        },
+        {
+          "track_id": 9,
+          "bbox": [419.45, 705.53, 440.91, 762.66],
+          "class_id": 0,
+          "class_label": "person",
+          "confidence": 0.6627
+        }
+      ]
+    }
+  ],
+  "annotated_video_path": "/app/outputs/track_smoke_tracked.mp4",
+  "metadata": {
+    "source_filename": "track_smoke.mp4"
+  }
+}
+
