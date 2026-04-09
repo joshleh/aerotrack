@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import tempfile
 from pathlib import Path
 from typing import Any
 
 import mlflow
 import pandas as pd
+import yaml
 from mlflow.exceptions import MlflowException
 from ultralytics import YOLO
 
@@ -18,6 +20,30 @@ def _coerce_metric(value: Any) -> float | None:
     if pd.isna(numeric):
         return None
     return numeric
+
+
+def _resolve_dataset_yaml(dataset_yaml_path: str) -> str:
+    dataset_path = Path(dataset_yaml_path).resolve()
+    with dataset_path.open("r", encoding="utf-8") as handle:
+        dataset_config = yaml.safe_load(handle)
+
+    configured_root = dataset_config.get("path")
+    yaml_parent = dataset_path.parent
+
+    if configured_root:
+        configured_root_path = Path(configured_root)
+        train_dir = configured_root_path / str(dataset_config.get("train", "images/train"))
+        val_dir = configured_root_path / str(dataset_config.get("val", "images/val"))
+        if train_dir.exists() and val_dir.exists():
+            return str(dataset_path)
+
+    dataset_config["path"] = str(yaml_parent)
+
+    temp_dir = Path(tempfile.mkdtemp(prefix="aerotrack-dataset-"))
+    resolved_yaml_path = temp_dir / dataset_path.name
+    with resolved_yaml_path.open("w", encoding="utf-8") as handle:
+        yaml.safe_dump(dataset_config, handle, sort_keys=False)
+    return str(resolved_yaml_path)
 
 
 def main() -> None:
@@ -38,6 +64,7 @@ def main() -> None:
     parser.add_argument("--mlflow-experiment", default="aerotrack-yolov8", help="MLflow experiment name.")
     parser.add_argument("--mlflow-model-name", default="aerotrack-detector", help="MLflow registry model name.")
     args = parser.parse_args()
+    resolved_dataset_yaml = _resolve_dataset_yaml(args.data)
 
     mlflow.set_tracking_uri(args.mlflow_tracking_uri)
     mlflow.set_experiment(args.mlflow_experiment)
@@ -47,6 +74,7 @@ def main() -> None:
             {
                 "model": args.model,
                 "dataset": args.data,
+                "resolved_dataset": resolved_dataset_yaml,
                 "epochs": args.epochs,
                 "imgsz": args.imgsz,
                 "batch": args.batch,
@@ -56,7 +84,7 @@ def main() -> None:
 
         model = YOLO(args.model)
         train_results = model.train(
-            data=args.data,
+            data=resolved_dataset_yaml,
             epochs=args.epochs,
             imgsz=args.imgsz,
             batch=args.batch,
