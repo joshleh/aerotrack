@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, File, UploadFile
 
+from api.artifacts import artifact_url_for_path
 from api.schemas import TrackResponse
 from src.track import track_video
 from src.utils import get_env, get_runtime_thresholds
@@ -37,5 +38,8 @@ async def track(file: UploadFile = File(...)) -> TrackResponse:
     return TrackResponse(
         frames=payload["frames"],
         annotated_video_path=payload["annotated_video_path"],
-        metadata={"source_filename": file.filename},
+        metadata={
+            "source_filename": file.filename,
+            "annotated_video_url": artifact_url_for_path(payload["annotated_video_path"]),
+        },
     )

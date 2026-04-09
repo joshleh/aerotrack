@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -20,6 +21,13 @@ class AerotrackApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"status": "ok"})
 
+    def test_homepage_renders_browser_demo(self) -> None:
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/html", response.headers["content-type"])
+        self.assertIn("AeroTrack Demo", response.text)
+
     @patch.dict(
         "os.environ",
         {
@@ -27,6 +35,7 @@ class AerotrackApiTests(unittest.TestCase):
             "API_PORT": "8000",
             "AEROTRACK_MODEL_PATH": "yolov8m.pt",
             "AEROTRACK_DEVICE": "cpu",
+            "MLFLOW_UI_URL": "https://mlflow.example.com",
         },
         clear=False,
     )
@@ -39,6 +48,7 @@ class AerotrackApiTests(unittest.TestCase):
         self.assertEqual(payload["version"], "0.1.0")
         self.assertEqual(payload["model_path"], "yolov8m.pt")
         self.assertEqual(payload["device"], "cpu")
+        self.assertEqual(payload["mlflow_ui_url"], "https://mlflow.example.com")
 
     @patch("api.routes.detect.parse_yolo_result")
     @patch("api.routes.detect.get_inference_device")
@@ -99,36 +109,51 @@ class AerotrackApiTests(unittest.TestCase):
         mock_track_video: MagicMock,
     ) -> None:
         with tempfile.TemporaryDirectory() as output_dir:
-            mock_get_env.return_value = output_dir
-            mock_thresholds.return_value = (0.25, 0.45)
-            mock_track_video.return_value = {
-                "annotated_video_path": f"{output_dir}/clip_tracked.mp4",
-                "frames": [
-                    {
-                        "frame_index": 0,
-                        "objects": [
-                            {
-                                "track_id": 1,
-                                "bbox": [1.0, 2.0, 10.0, 20.0],
-                                "class_id": 3,
-                                "class_label": "car",
-                                "confidence": 0.98,
-                            }
-                        ],
-                    }
-                ],
-            }
+            with patch.dict("os.environ", {"AEROTRACK_OUTPUT_DIR": output_dir}, clear=False):
+                mock_get_env.return_value = output_dir
+                mock_thresholds.return_value = (0.25, 0.45)
+                mock_track_video.return_value = {
+                    "annotated_video_path": f"{output_dir}/clip_tracked.mp4",
+                    "frames": [
+                        {
+                            "frame_index": 0,
+                            "objects": [
+                                {
+                                    "track_id": 1,
+                                    "bbox": [1.0, 2.0, 10.0, 20.0],
+                                    "class_id": 3,
+                                    "class_label": "car",
+                                    "confidence": 0.98,
+                                }
+                            ],
+                        }
+                    ],
+                }
 
-            response = self.client.post(
-                "/track",
-                files={"file": ("clip.mp4", b"fake-video-bytes", "video/mp4")},
-            )
+                response = self.client.post(
+                    "/track",
+                    files={"file": ("clip.mp4", b"fake-video-bytes", "video/mp4")},
+                )
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertEqual(payload["metadata"]["source_filename"], "clip.mp4")
+        self.assertEqual(payload["metadata"]["annotated_video_url"], "/artifacts/clip_tracked.mp4")
         self.assertEqual(payload["frames"][0]["objects"][0]["track_id"], 1)
         mock_track_video.assert_called_once()
+
+    @patch.dict("os.environ", {"AEROTRACK_OUTPUT_DIR": "/tmp/aerotrack-test"}, clear=False)
+    def test_artifact_route_serves_files_inside_output_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifact_dir = Path(temp_dir)
+            artifact_path = artifact_dir / "demo.mp4"
+            artifact_path.write_bytes(b"fake-video")
+
+            with patch.dict("os.environ", {"AEROTRACK_OUTPUT_DIR": str(artifact_dir)}, clear=False):
+                response = self.client.get("/artifacts/demo.mp4")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"fake-video")
 
 
 if __name__ == "__main__":
