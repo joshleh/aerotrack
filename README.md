@@ -180,6 +180,12 @@ Expected response:
 {"status":"ok"}
 ```
 
+Optional runtime metadata:
+
+```bash
+curl http://localhost:8000/metadata
+```
+
 ## Dataset setup
 
 The repository includes a reproducible VisDrone prep flow:
@@ -348,6 +354,7 @@ Additional deployment helpers:
 
 - production-oriented env template: [.env.production.example](/Users/joshu/aerotrack/.env.production.example)
 - saved sample API responses: [examples/detect_response.json](/Users/joshu/aerotrack/examples/detect_response.json), [examples/track_response.json](/Users/joshu/aerotrack/examples/track_response.json)
+- saved demo commands: [examples/demo_commands.md](/Users/joshu/aerotrack/examples/demo_commands.md)
 
 ## Supporting files
 
@@ -358,4 +365,5 @@ Additional deployment helpers:
 - FastAPI application: [api/main.py](/Users/joshu/aerotrack/api/main.py)
 - Demo guide: [docs/demo.md](/Users/joshu/aerotrack/docs/demo.md)
 - Deployment guide: [docs/deploy.md](/Users/joshu/aerotrack/docs/deploy.md)
+- Operator runbook: [docs/runbook.md](/Users/joshu/aerotrack/docs/runbook.md)
 - Smoke-test clip helper: [scripts/make_smoke_clip.py](/Users/joshu/aerotrack/scripts/make_smoke_clip.py)

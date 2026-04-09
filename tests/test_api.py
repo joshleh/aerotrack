@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import io
-import os
 import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
@@ -21,6 +19,26 @@ class AerotrackApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"status": "ok"})
+
+    @patch.dict(
+        "os.environ",
+        {
+            "API_HOST": "0.0.0.0",
+            "API_PORT": "8000",
+            "AEROTRACK_MODEL_PATH": "yolov8m.pt",
+            "AEROTRACK_DEVICE": "cpu",
+        },
+        clear=False,
+    )
+    def test_metadata_returns_runtime_summary(self) -> None:
+        response = self.client.get("/metadata")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["name"], "aerotrack")
+        self.assertEqual(payload["version"], "0.1.0")
+        self.assertEqual(payload["model_path"], "yolov8m.pt")
+        self.assertEqual(payload["device"], "cpu")
 
     @patch("api.routes.detect.parse_yolo_result")
     @patch("api.routes.detect.get_inference_device")
@@ -115,4 +133,3 @@ class AerotrackApiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

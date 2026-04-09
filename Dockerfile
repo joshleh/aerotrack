@@ -1,5 +1,9 @@
 FROM python:3.11-slim
 
+LABEL org.opencontainers.image.title="aerotrack-api"
+LABEL org.opencontainers.image.description="FastAPI inference service for aerial object detection and tracking."
+LABEL org.opencontainers.image.source="https://github.com/joshleh/aerotrack"
+
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
@@ -19,4 +23,3 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY . /app
 
 CMD ["sh", "-c", "uvicorn api.main:app --host ${API_HOST} --port ${API_PORT}"]
-
