@@ -277,6 +277,16 @@ def render_homepage() -> HTMLResponse:
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
+      .notice {
+        margin-top: 20px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: rgba(31, 111, 80, 0.08);
+        border: 1px solid rgba(31, 111, 80, 0.14);
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
       .feature {
         padding: 18px;
         border-radius: 18px;
@@ -350,6 +360,9 @@ def render_homepage() -> HTMLResponse:
               <div class="label">Runtime</div>
               <div class="value">FastAPI + Docker</div>
             </div>
+          </div>
+          <div class="notice">
+            This demo is already fully functional. The current checkpoint is a validated pipeline artifact, and a stronger GPU-trained model is planned as the next public-demo upgrade.
           </div>
         </article>
 

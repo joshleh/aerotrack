@@ -2,6 +2,8 @@
 
 `aerotrack` is an end-to-end MLOps pipeline for multi-object detection and tracking on aerial drone footage. It is built to look and feel like a real perception-system project: public aerial data ingestion, YOLOv8 fine-tuning, Kalman filter-based tracking via ByteTrack, experiment tracking in MLflow, and a containerized FastAPI inference surface for detection and clip-level tracking.
 
+Current status: the full system is operational and browser-demo ready today. The current demo is served from a validated training checkpoint, and a higher-quality GPU-trained model is the next planned upgrade for the public showcase.
+
 This project is intentionally framed around Anduril-relevant capabilities:
 
 - aerial perception on drone imagery
