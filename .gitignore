@@ -12,3 +12,4 @@ mlruns/
 runs/
 outputs/
 artifacts/
+models/

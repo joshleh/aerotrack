@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: aerotrack-demo
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: AEROTRACK_MODEL_PATH
+        value: /app/models/aerotrack-detector.pt
+      - key: AEROTRACK_MODEL_URL
+        sync: false
+      - key: AEROTRACK_DEVICE
+        value: cpu
+      - key: AEROTRACK_CONFIDENCE
+        value: "0.25"
+      - key: AEROTRACK_IOU
+        value: "0.45"
+      - key: AEROTRACK_OUTPUT_DIR
+        value: /app/outputs
+      - key: MLFLOW_UI_URL
+        sync: false

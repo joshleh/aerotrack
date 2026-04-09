@@ -175,6 +175,10 @@ def render_homepage() -> HTMLResponse:
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .wide {
+        margin-top: 24px;
+      }
+
       .panel {
         padding: 26px;
       }
@@ -267,11 +271,41 @@ def render_homepage() -> HTMLResponse:
         font-weight: 800;
       }
 
+      .feature-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .feature {
+        padding: 18px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid var(--line);
+      }
+
+      .feature h3 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+      }
+
+      .feature p,
+      .feature ul {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .feature ul {
+        padding-left: 18px;
+      }
+
       @media (max-width: 920px) {
         .hero,
         .grid,
         .metrics,
-        .status-grid {
+        .status-grid,
+        .feature-grid {
           grid-template-columns: 1fr;
         }
 
@@ -380,6 +414,32 @@ def render_homepage() -> HTMLResponse:
             <pre id="track-json"></pre>
           </div>
         </article>
+      </section>
+
+      <section class="card panel wide">
+        <h2>Showcase Notes</h2>
+        <p>
+          This public demo is designed to be easy to review quickly: short clips, a live checkpoint summary, and a
+          browser-native path from upload to annotated result.
+        </p>
+        <div class="feature-grid">
+          <div class="feature">
+            <h3>What To Upload</h3>
+            <p>Use one aerial image or a short clip under about 10 seconds for the smoothest CPU demo experience.</p>
+          </div>
+          <div class="feature">
+            <h3>What The Demo Proves</h3>
+            <ul>
+              <li>YOLOv8 detection on aerial imagery</li>
+              <li>ByteTrack persistent IDs across frames</li>
+              <li>FastAPI inference routing and artifact serving</li>
+            </ul>
+          </div>
+          <div class="feature">
+            <h3>How To Inspect It</h3>
+            <p>Use the live runtime card, the upload flows on this page, the OpenAPI docs, and MLflow for training evidence.</p>
+          </div>
+        </div>
       </section>
     </main>
 

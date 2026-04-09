@@ -27,6 +27,7 @@ The result is a repo that is closer to a deployable perception service than a on
 - Track detections across frames with `ByteTrack`
 - Serve `POST /detect` for single-frame inference
 - Serve `POST /track` for clip-level tracking results
+- Serve a browser-ready demo at `GET /`
 - Log training metrics, plots, and model artifacts to MLflow
 - Run the API and tracking server locally with `docker-compose`
 
@@ -184,6 +185,12 @@ Optional runtime metadata:
 
 ```bash
 curl http://localhost:8000/metadata
+```
+
+Browser demo:
+
+```text
+http://localhost:8000/
 ```
 
 ## Dataset setup

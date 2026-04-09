@@ -22,4 +22,4 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY . /app
 
-CMD ["sh", "-c", "uvicorn api.main:app --host ${API_HOST} --port ${API_PORT}"]
+CMD ["sh", "-c", "python scripts/bootstrap_runtime.py && uvicorn api.main:app --host ${API_HOST:-0.0.0.0} --port ${PORT:-${API_PORT:-8000}}"]
