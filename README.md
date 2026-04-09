@@ -1,51 +1,88 @@
 # aerotrack
 
-Production-style MLOps repository for multi-object detection and tracking on aerial drone footage. The stack is designed around Anduril-relevant perception needs: airborne sensing, dense urban scenes, persistent multi-object tracks, reproducible training, and containerized deployment for real-time inference workflows.
+`aerotrack` is an end-to-end MLOps pipeline for multi-object detection and tracking on aerial drone footage. It is built to look and feel like a real perception-system project: public aerial data ingestion, YOLOv8 fine-tuning, Kalman filter-based tracking via ByteTrack, experiment tracking in MLflow, and a containerized FastAPI inference surface for detection and clip-level tracking.
 
-## What is included
+This project is intentionally framed around Anduril-relevant capabilities:
 
-- YOLOv8m fine-tuning on VisDrone2019-DET with MLflow experiment tracking and model registration
-- ByteTrack-based multi-object tracking over drone video
-- FastAPI inference service for single-image detection and uploaded-video tracking
-- Docker and Docker Compose services for the API and an MLflow tracking server
-- Dataset download, conversion, and starter EDA notebook for VisDrone
+- aerial perception on drone imagery
+- persistent multi-object tracking
+- real-time inference APIs
+- reproducible model training and experiment tracking
+- model packaging and deployment with Docker
+
+## Why this project
+
+Anduril-style perception work sits at the intersection of modern deep learning, classical tracking, and operational ML systems. `aerotrack` demonstrates all three:
+
+- `YOLOv8` handles contemporary object detection
+- `ByteTrack` provides persistent IDs across frames using a Kalman filter-based MOT pipeline
+- `MLflow` captures metrics, artifacts, and model versions so experiments are not one-off notebook runs
+- `FastAPI` exposes the system in a form another service or operator workflow could actually call
+
+The result is a repo that is closer to a deployable perception service than a one-off computer vision demo.
+
+## Core capabilities
+
+- Fine-tune `yolov8m` on `VisDrone2019-DET`
+- Track detections across frames with `ByteTrack`
+- Serve `POST /detect` for single-frame inference
+- Serve `POST /track` for clip-level tracking results
+- Log training metrics, plots, and model artifacts to MLflow
+- Run the API and tracking server locally with `docker-compose`
+
+## Stack
+
+| Layer | Tooling |
+| --- | --- |
+| Detection | Ultralytics YOLOv8 |
+| Tracking | Supervision ByteTrack |
+| Inference API | FastAPI |
+| Experiment tracking | MLflow |
+| CV / DL runtime | OpenCV, PyTorch |
+| Packaging | Docker, docker-compose |
+| Dataset | VisDrone2019-DET |
+
+## Why VisDrone
+
+VisDrone is a strong fit for this project because it contains publicly available drone-captured imagery with dense annotations for pedestrians, cars, vans, buses, trucks, bicycles, and related classes. It is thematically aligned with low-altitude aerial surveillance, urban scene understanding, and persistent object monitoring, which makes it much more compelling here than a generic object detection benchmark.
 
 ## Architecture
 
 ```text
-                    +---------------------------+
-                    |   VisDrone2019-DET Data   |
-                    | raw zips -> YOLO format   |
-                    +-------------+-------------+
+                    +-----------------------------+
+                    |      VisDrone2019-DET       |
+                    |  download -> convert YOLO   |
+                    +-------------+---------------+
                                   |
                                   v
-                     +------------+------------+
-                     |        src/train.py     |
-                     | YOLOv8m fine-tuning     |
-                     | + MLflow metrics/logs   |
-                     +------------+------------+
+                    +-------------+---------------+
+                    |         src/train.py        |
+                    | YOLOv8m fine-tuning         |
+                    | MLflow params + metrics     |
+                    +-------------+---------------+
                                   |
                                   v
-                     +------------+------------+
-                     |       MLflow Server     |
-                     | runs, metrics, models   |
-                     +------------+------------+
+                    +-------------+---------------+
+                    |        MLflow Server        |
+                    | runs, plots, artifacts,     |
+                    | model registry metadata     |
+                    +-------------+---------------+
                                   |
                +------------------+------------------+
                |                                     |
                v                                     v
-     +---------+----------+               +----------+---------+
-     |   src/predict.py   |               |    src/track.py    |
-     | frame detections   |               | YOLO + ByteTrack   |
-     +---------+----------+               +----------+---------+
+     +---------+----------+               +----------+----------+
+     |   src/predict.py   |               |    src/track.py     |
+     | single-frame det   |               | YOLO + ByteTrack    |
+     +---------+----------+               +----------+----------+
                |                                     |
                +------------------+------------------+
                                   |
                                   v
-                     +------------+------------+
-                     |        FastAPI API      |
-                     | /detect and /track      |
-                     +-------------------------+
+                    +-------------+---------------+
+                    |         FastAPI API         |
+                    |    /detect and /track       |
+                    +-----------------------------+
 ```
 
 ## Repository layout
@@ -53,11 +90,23 @@ Production-style MLOps repository for multi-object detection and tracking on aer
 ```text
 aerotrack/
 ├── api/
+│   ├── main.py
+│   ├── routes/
+│   └── schemas.py
 ├── data/
+│   └── README.md
 ├── mlflow/
+│   └── mlflow.dockerfile
 ├── notebooks/
+│   └── 01_eda.ipynb
 ├── scripts/
+│   └── download_visDrone.sh
 ├── src/
+│   ├── predict.py
+│   ├── track.py
+│   ├── train.py
+│   └── utils.py
+├── .dockerignore
 ├── .env.example
 ├── .gitignore
 ├── Dockerfile
@@ -66,22 +115,22 @@ aerotrack/
 └── README.md
 ```
 
-## Setup
+## Quickstart
 
-1. Clone the repository and enter it.
+1. Clone the repository.
 
 ```bash
 git clone <your-repo-url>
 cd aerotrack
 ```
 
-2. Create your environment file.
+2. Create your local environment file.
 
 ```bash
 cp .env.example .env
 ```
 
-Recommended `.env` values for local Docker use:
+Recommended local values:
 
 ```dotenv
 API_HOST=0.0.0.0
@@ -105,53 +154,46 @@ chmod +x scripts/download_visDrone.sh
 ./scripts/download_visDrone.sh
 ```
 
-4. Start the inference API and MLflow tracking server.
+4. Build and start the stack.
 
 ```bash
 docker-compose up --build
 ```
 
-## Training
-
-Run YOLOv8m fine-tuning and log everything to MLflow:
+5. Verify the API is live.
 
 ```bash
-python -m src.train \
-  --data data/visdrone/VisDrone.yaml \
-  --epochs 50 \
-  --imgsz 1024 \
-  --batch 8 \
-  --lr 0.001 \
-  --mlflow-tracking-uri "$MLFLOW_TRACKING_URI"
+curl http://localhost:8000/health
 ```
 
-The training script logs:
+Expected response:
 
-- hyperparameters
-- per-epoch loss curves
-- `mAP50`
-- `mAP50-95`
-- Ultralytics plots and result CSVs
-- final model artifact
+```json
+{"status":"ok"}
+```
 
-The best model is registered in the MLflow Model Registry as `aerotrack-detector` by default.
+## Dataset setup
 
-Model Registry support depends on the MLflow backend store. Use a database-backed backend store such as SQLite or Postgres for registry features. The provided local setup uses SQLite via `MLFLOW_BACKEND_STORE_URI=sqlite:///mlflow/mlflow.db`.
+The repository includes a reproducible VisDrone prep flow:
+
+- [data/README.md](/Users/joshu/aerotrack/data/README.md) explains the official source and expected output structure
+- [scripts/download_visDrone.sh](/Users/joshu/aerotrack/scripts/download_visDrone.sh) downloads the train / val / test-dev archives, extracts them, converts annotations into YOLO format, and generates `data/visdrone/VisDrone.yaml`
+
+This means a fresh clone can move from raw data to training-ready layout with a single command.
 
 ## Inference API
 
 ### `POST /detect`
 
-Single-frame detection with multipart image upload:
+Single-frame inference via multipart upload:
 
 ```bash
 curl -X POST "http://localhost:8000/detect" \
   -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
   -F "file=@/absolute/path/to/frame.jpg"
 ```
 
-Response shape:
+Example response:
 
 ```json
 {
@@ -168,16 +210,15 @@ Response shape:
 
 ### `POST /track`
 
-Video tracking with multipart upload:
+Clip-level tracking via multipart upload:
 
 ```bash
 curl -X POST "http://localhost:8000/track" \
   -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
   -F "file=@/absolute/path/to/clip.mp4"
 ```
 
-Response shape:
+Example response:
 
 ```json
 {
@@ -202,12 +243,80 @@ Response shape:
 }
 ```
 
-## MLflow
+## Training and MLflow
 
-After `docker-compose up`, open [http://localhost:5001](http://localhost:5001) to inspect experiments, compare runs, and browse the registered `aerotrack-detector` model versions.
+Run training locally from the repo root:
 
-## Notes
+```bash
+python -m src.train \
+  --data data/visdrone/VisDrone.yaml \
+  --epochs 50 \
+  --imgsz 1024 \
+  --batch 8 \
+  --lr 0.001 \
+  --mlflow-tracking-uri "$MLFLOW_TRACKING_URI"
+```
 
-- No credentials, paths, or tracking URIs are hardcoded in application code; runtime configuration is sourced from environment variables.
-- `data/`, `runs/`, `mlruns/`, and `.env` are ignored by Git.
-- The starter notebook lives at [notebooks/01_eda.ipynb](/Users/joshu/aerotrack/notebooks/01_eda.ipynb).
+Run training from the Dockerized API service:
+
+```bash
+docker-compose exec api python -m src.train \
+  --data data/visdrone/VisDrone.yaml \
+  --epochs 1 \
+  --imgsz 640 \
+  --batch 2 \
+  --mlflow-tracking-uri http://mlflow:5000
+```
+
+`src/train.py` logs:
+
+- hyperparameters
+- per-epoch loss curves
+- `mAP50`
+- `mAP50-95`
+- Ultralytics plots and CSV outputs
+- final model artifact
+
+The default registry name is `aerotrack-detector`.
+
+Open MLflow at [http://localhost:5001](http://localhost:5001) to inspect runs, compare metrics, and browse model registry entries.
+
+## Local training note
+
+The full default configuration in this repo is designed as a production-style starting point, not a promise that every laptop can train `yolov8m` efficiently on CPU. In local Docker testing, reduced settings such as `--epochs 1 --imgsz 640 --batch 2` are a safer validation path. For the full `imgsz=1024, batch=8` flow, a machine with more memory and ideally GPU acceleration is the better target.
+
+## Demo checklist
+
+If you are using this project in an interview, challenge, or portfolio setting, the most effective demo flow is:
+
+1. Show `docker-compose up --build`
+2. Hit `GET /health`
+3. Run `POST /detect` on a VisDrone frame
+4. Run `POST /track` on a short clip and show persistent IDs
+5. Open MLflow and show the run history plus logged artifacts
+
+That demonstrates modeling, tracking, API design, experiment management, and containerization in one pass.
+
+## What makes this project credible
+
+- It uses a real aerial dataset rather than generic COCO-only examples
+- It combines deep detection with classical MOT logic
+- It exposes a service boundary instead of stopping at notebook output
+- It tracks experiments and artifacts in MLflow
+- It is packaged so another engineer can run it with Docker
+
+## Security and config hygiene
+
+- No credentials are hardcoded
+- Runtime configuration is environment-driven
+- `.env` is ignored by Git
+- `data/`, `runs/`, `mlruns/`, and local artifacts are excluded from version control
+- Docker build context is trimmed with [`.dockerignore`](/Users/joshu/aerotrack/.dockerignore)
+
+## Supporting files
+
+- Starter EDA notebook: [notebooks/01_eda.ipynb](/Users/joshu/aerotrack/notebooks/01_eda.ipynb)
+- Dataset instructions: [data/README.md](/Users/joshu/aerotrack/data/README.md)
+- Training entrypoint: [src/train.py](/Users/joshu/aerotrack/src/train.py)
+- Tracking pipeline: [src/track.py](/Users/joshu/aerotrack/src/track.py)
+- FastAPI application: [api/main.py](/Users/joshu/aerotrack/api/main.py)
