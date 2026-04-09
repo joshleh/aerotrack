@@ -100,12 +100,15 @@ aerotrack/
 ├── notebooks/
 │   └── 01_eda.ipynb
 ├── scripts/
-│   └── download_visDrone.sh
+│   ├── download_visDrone.sh
+│   └── make_smoke_clip.py
 ├── src/
 │   ├── predict.py
 │   ├── track.py
 │   ├── train.py
 │   └── utils.py
+├── docs/
+│   └── demo.md
 ├── .dockerignore
 ├── .env.example
 ├── .gitignore
@@ -243,6 +246,22 @@ Example response:
 }
 ```
 
+To generate a short repeat-frame smoke-test clip from a single image:
+
+```bash
+python scripts/make_smoke_clip.py \
+  --image data/raw/VisDrone2019-DET-val/images/0000271_01401_d_0000380.jpg \
+  --output outputs/smoke.mp4
+```
+
+If you are working from the Dockerized environment instead of a local Python environment, use:
+
+```bash
+docker-compose exec api python scripts/make_smoke_clip.py \
+  --image data/raw/VisDrone2019-DET-val/images/0000271_01401_d_0000380.jpg \
+  --output outputs/smoke.mp4
+```
+
 ## Training and MLflow
 
 Run training locally from the repo root:
@@ -297,6 +316,8 @@ If you are using this project in an interview, challenge, or portfolio setting, 
 
 That demonstrates modeling, tracking, API design, experiment management, and containerization in one pass.
 
+For a tighter presentation outline, use [docs/demo.md](/Users/joshu/aerotrack/docs/demo.md).
+
 ## What makes this project credible
 
 - It uses a real aerial dataset rather than generic COCO-only examples
@@ -320,3 +341,5 @@ That demonstrates modeling, tracking, API design, experiment management, and con
 - Training entrypoint: [src/train.py](/Users/joshu/aerotrack/src/train.py)
 - Tracking pipeline: [src/track.py](/Users/joshu/aerotrack/src/track.py)
 - FastAPI application: [api/main.py](/Users/joshu/aerotrack/api/main.py)
+- Demo guide: [docs/demo.md](/Users/joshu/aerotrack/docs/demo.md)
+- Smoke-test clip helper: [scripts/make_smoke_clip.py](/Users/joshu/aerotrack/scripts/make_smoke_clip.py)
