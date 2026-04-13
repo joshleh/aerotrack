@@ -2,7 +2,7 @@
 
 `aerotrack` is an end-to-end MLOps pipeline for multi-object detection and tracking on aerial drone footage. It is built to look and feel like a real perception-system project: public aerial data ingestion, YOLOv8 fine-tuning, Kalman filter-based tracking via ByteTrack, experiment tracking in MLflow, and a containerized FastAPI inference surface for detection and clip-level tracking.
 
-Current status: the full system is operational and browser-demo ready today. The current demo is served from a validated training checkpoint, and a higher-quality GPU-trained model is the next planned upgrade for the public showcase.
+Current status: the full system is operational and browser-demo ready today. The repo includes the validated demo checkpoint at `models/aerotrack-detector-validation.pt`, plus a stronger RTX 4070 Ti-trained checkpoint at `models/aerotrack-detector-4070ti-strong-v2.pt` for follow-on evaluation and promotion.
 
 This project is intentionally framed around Anduril-relevant capabilities:
 
@@ -137,8 +137,16 @@ cd aerotrack
 
 2. Create your local environment file.
 
+macOS / Linux:
+
 ```bash
 cp .env.example .env
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
 Recommended local values:
@@ -160,9 +168,17 @@ MLFLOW_ARTIFACT_ROOT=/mlflow/artifacts
 
 3. Download and prepare VisDrone.
 
+macOS / Linux:
+
 ```bash
 chmod +x scripts/download_visDrone.sh
 ./scripts/download_visDrone.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\download_visDrone.ps1
 ```
 
 4. Build and start the stack.
@@ -203,6 +219,10 @@ The repository includes a reproducible VisDrone prep flow:
 - [scripts/download_visDrone.sh](/Users/joshu/aerotrack/scripts/download_visDrone.sh) downloads the train / val / test-dev archives, extracts them, converts annotations into YOLO format, and generates `data/visdrone/VisDrone.yaml`
 
 This means a fresh clone can move from raw data to training-ready layout with a single command.
+
+For a Windows-specific GPU setup flow, see [docs/windows_gpu_setup.md](/Users/joshu/aerotrack/docs/windows_gpu_setup.md).
+
+For the saved RTX 4070 Ti training handoff and next-step notes, see [docs/gpu_run_handoff.md](/Users/joshu/aerotrack/docs/gpu_run_handoff.md).
 
 ## Inference API
 
@@ -296,6 +316,14 @@ python -m src.train \
   --mlflow-tracking-uri "$MLFLOW_TRACKING_URI"
 ```
 
+Windows PowerShell example:
+
+```powershell
+$env:MPLCONFIGDIR = "$PWD\.venv\var\mplconfig"
+$env:YOLO_CONFIG_DIR = "$PWD\.venv\var\ultralytics"
+python -m src.train --model models/yolov8m.pt --data data/visdrone/VisDrone.yaml --epochs 50 --imgsz 1024 --batch 4 --name aerotrack-4070ti --mlflow-tracking-uri file:./mlruns
+```
+
 Run training from the Dockerized API service:
 
 ```bash
@@ -323,6 +351,8 @@ Open MLflow at [http://localhost:5001](http://localhost:5001) to inspect runs, c
 ## Local training note
 
 The full default configuration in this repo is designed as a production-style starting point, not a promise that every laptop can train `yolov8m` efficiently on CPU. In local Docker testing, reduced settings such as `--epochs 1 --imgsz 640 --batch 2` are a safer validation path. For the full `imgsz=1024, batch=8` flow, a machine with more memory and ideally GPU acceleration is the better target.
+
+On Windows, prefer a Python `3.11` virtual environment for the pinned Torch stack in this repo. The end-to-end setup is documented in [docs/windows_gpu_setup.md](/Users/joshu/aerotrack/docs/windows_gpu_setup.md).
 
 ## Demo checklist
 

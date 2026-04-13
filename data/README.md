@@ -13,9 +13,17 @@ VisDrone publishes the detection benchmark from its official download page:
 
 From the repository root:
 
+macOS / Linux:
+
 ```bash
 chmod +x scripts/download_visDrone.sh
 ./scripts/download_visDrone.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\download_visDrone.ps1
 ```
 
 The script will:
@@ -53,4 +61,6 @@ The generated YOLO dataset uses these 10 VisDrone detection classes:
 `pedestrian`, `people`, `bicycle`, `car`, `van`, `truck`, `tricycle`, `awning-tricycle`, `bus`, `motor`
 
 Ignored regions (`category_id = 0`) are skipped during conversion.
+
+If you are preparing the dataset on a Windows GPU machine, see [docs/windows_gpu_setup.md](/Users/joshu/aerotrack/docs/windows_gpu_setup.md) for the recommended virtual environment and training flow.
 

@@ -10,6 +10,8 @@ import pandas as pd
 import yaml
 from mlflow.exceptions import MlflowException
 from ultralytics import YOLO
+from ultralytics.utils import callbacks as ultralytics_callbacks
+from ultralytics.utils.callbacks.mlflow import callbacks as ultralytics_mlflow_callbacks
 
 
 def _coerce_metric(value: Any) -> float | None:
@@ -46,6 +48,21 @@ def _resolve_dataset_yaml(dataset_yaml_path: str) -> str:
     return str(resolved_yaml_path)
 
 
+def _disable_ultralytics_mlflow_callbacks() -> Any:
+    # This project logs to MLflow explicitly below, so strip the built-in
+    # Ultralytics MLflow integration during trainer construction to avoid
+    # duplicate runs and Windows-specific URI conflicts.
+    original_add_integration_callbacks = ultralytics_callbacks.add_integration_callbacks
+
+    def _add_integration_callbacks_without_mlflow(instance: Any) -> None:
+        original_add_integration_callbacks(instance)
+        for event_name, callback in ultralytics_mlflow_callbacks.items():
+            instance.callbacks[event_name] = [cb for cb in instance.callbacks[event_name] if cb is not callback]
+
+    ultralytics_callbacks.add_integration_callbacks = _add_integration_callbacks_without_mlflow
+    return original_add_integration_callbacks
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Fine-tune YOLOv8m on VisDrone with MLflow logging.")
     parser.add_argument("--data", default="data/visdrone/VisDrone.yaml", help="YOLO dataset YAML path.")
@@ -54,6 +71,13 @@ def main() -> None:
     parser.add_argument("--imgsz", type=int, default=1024, help="Input image size.")
     parser.add_argument("--batch", type=int, default=8, help="Batch size.")
     parser.add_argument("--lr", type=float, default=0.001, help="Initial learning rate.")
+    parser.add_argument("--seed", type=int, default=0, help="Random seed for Ultralytics training.")
+    parser.add_argument(
+        "--deterministic",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable deterministic training behavior where supported.",
+    )
     parser.add_argument("--project", default="runs/train", help="Ultralytics output project directory.")
     parser.add_argument("--name", default="aerotrack-yolov8m", help="Ultralytics run name.")
     parser.add_argument(
@@ -79,28 +103,37 @@ def main() -> None:
                 "imgsz": args.imgsz,
                 "batch": args.batch,
                 "learning_rate": args.lr,
+                "seed": args.seed,
+                "deterministic": args.deterministic,
             }
         )
 
         model = YOLO(args.model)
-        train_results = model.train(
-            data=resolved_dataset_yaml,
-            epochs=args.epochs,
-            imgsz=args.imgsz,
-            batch=args.batch,
-            lr0=args.lr,
-            project=args.project,
-            name=args.name,
-            optimizer="AdamW",
-            plots=True,
-            save=True,
-            verbose=True,
-        )
+        original_add_integration_callbacks = _disable_ultralytics_mlflow_callbacks()
+        try:
+            train_results = model.train(
+                data=resolved_dataset_yaml,
+                epochs=args.epochs,
+                imgsz=args.imgsz,
+                batch=args.batch,
+                lr0=args.lr,
+                seed=args.seed,
+                deterministic=args.deterministic,
+                project=args.project,
+                name=args.name,
+                optimizer="AdamW",
+                plots=True,
+                save=True,
+                verbose=True,
+            )
+        finally:
+            ultralytics_callbacks.add_integration_callbacks = original_add_integration_callbacks
 
         save_dir = Path(train_results.save_dir)
         results_csv = save_dir / "results.csv"
         if results_csv.exists():
             metrics_df = pd.read_csv(results_csv)
+            metrics_df.columns = [str(column).strip() for column in metrics_df.columns]
             metric_columns = {
                 "metrics/mAP50(B)": "mAP50",
                 "metrics/mAP50-95(B)": "mAP50_95",
