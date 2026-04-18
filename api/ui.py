@@ -340,7 +340,7 @@ def render_homepage() -> HTMLResponse:
           <h1>Aerial perception, tracking, and MLOps in one browser-ready pipeline.</h1>
           <p>
             Upload a drone frame for object detection or a short clip for multi-object tracking.
-            This demo is backed by a validation-trained VisDrone checkpoint served through FastAPI,
+            This demo is backed by a stronger RTX 4070 Ti-trained VisDrone checkpoint served through FastAPI,
             with experiments tracked in MLflow and artifacts packaged through Docker.
           </p>
           <div class="hero-links">
@@ -362,7 +362,7 @@ def render_homepage() -> HTMLResponse:
             </div>
           </div>
           <div class="notice">
-            This demo is already fully functional. The current checkpoint is a validated pipeline artifact, and a stronger GPU-trained model is planned as the next public-demo upgrade.
+            This demo is already fully functional and now runs on the stronger RTX 4070 Ti-trained checkpoint. The earlier validation model is still included in the repo as a baseline artifact.
           </div>
         </article>
 

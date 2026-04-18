@@ -109,7 +109,7 @@ MLFLOW_ARTIFACT_ROOT=/mlflow/artifacts
 
 The repository includes [render.yaml](/Users/joshu/aerotrack/render.yaml), which defines a free Render web service for the demo app.
 
-The current repo is also set up to bundle the validation checkpoint directly under `models/` so the first public deployment can work immediately without requiring an external model host. Later, you can switch to `AEROTRACK_MODEL_URL` for a stronger GPU-trained checkpoint.
+The current repo is also set up to bundle the stronger RTX 4070 Ti checkpoint directly under `models/` so the public deployment can work immediately without requiring an external model host. Later, you can still switch to `AEROTRACK_MODEL_URL` if you want to ship a newer model without committing it into the repo.
 
 Suggested flow:
 
