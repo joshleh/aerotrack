@@ -2,7 +2,7 @@
 
 This repo now includes the stronger Windows GPU checkpoint from the RTX 4070 Ti machine:
 
-- checkpoint: `models/aerotrack-detector-4070ti-strong-v2.pt`
+- checkpoint: `models/aerotrack-detector-demo-v2.pt`
 - source run: `runs/train/aerotrack-4070ti-strong-v2`
 - base model: `models/yolov8m.pt`
 - dataset: `data/visdrone/VisDrone.yaml`
@@ -44,7 +44,7 @@ Pull these committed changes:
 - the Windows training notes in `docs/windows_gpu_setup.md`
 - the training fixes in `src/train.py`
 - this handoff note
-- the saved checkpoint `models/aerotrack-detector-4070ti-strong-v2.pt`
+- the saved checkpoint `models/aerotrack-detector-demo-v2.pt`
 
 Do not commit or sync these generated local artifacts:
 
@@ -61,7 +61,7 @@ Do not commit or sync these generated local artifacts:
 To test the stronger checkpoint on the MacBook without changing the default demo checkpoint, point inference at:
 
 ```dotenv
-AEROTRACK_MODEL_PATH=models/aerotrack-detector-4070ti-strong-v2.pt
+AEROTRACK_MODEL_PATH=models/aerotrack-detector-demo-v2.pt
 ```
 
 That lets the MacBook compare the stronger GPU-trained model against the existing validated checkpoint before promoting it as the new default.

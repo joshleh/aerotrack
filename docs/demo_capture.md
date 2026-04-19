@@ -21,10 +21,16 @@ Confirm the API is pointed at the stronger GPU-trained checkpoint:
 curl http://localhost:8000/metadata
 ```
 
-You want `model_path` to show:
+You want `/metadata` to show:
 
 ```text
-/app/models/aerotrack-detector-4070ti-strong-v2.pt
+/app/models/aerotrack-detector-demo-v2.pt
+
+The browser runtime panel should show:
+
+```text
+AeroTrack Detector v2
+```
 ```
 
 ## Recommended capture sequence

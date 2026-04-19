@@ -27,6 +27,8 @@ class AerotrackApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/html", response.headers["content-type"])
         self.assertIn("AeroTrack Demo", response.text)
+        self.assertIn("Try Sample Detection", response.text)
+        self.assertIn("Try Sample Tracking", response.text)
 
     @patch.dict(
         "os.environ",
@@ -154,6 +156,12 @@ class AerotrackApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b"fake-video")
+
+    def test_sample_route_serves_bundled_media(self) -> None:
+        response = self.client.get("/samples/sample_frame.jpg")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(response.headers["content-type"], ("image/jpeg", "image/jpg"))
 
 
 if __name__ == "__main__":

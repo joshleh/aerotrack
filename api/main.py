@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from api.artifacts import resolve_artifact_path
 from api.routes.detect import router as detect_router
 from api.routes.track import router as track_router
+from api.samples import resolve_sample_path
 from api.ui import render_homepage
 
 app = FastAPI(
@@ -47,3 +48,9 @@ def metadata() -> dict[str, str]:
 def artifact(artifact_path: str) -> FileResponse:
     artifact_file = resolve_artifact_path(artifact_path)
     return FileResponse(path=artifact_file, filename=artifact_file.name)
+
+
+@app.get("/samples/{sample_path:path}")
+def sample(sample_path: str) -> FileResponse:
+    sample_file = resolve_sample_path(sample_path)
+    return FileResponse(path=sample_file, filename=sample_file.name)

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +17,40 @@ from src.utils import (
     load_yolo_model,
     save_json,
 )
+
+
+def _transcode_for_browser(video_path: str) -> str:
+    ffmpeg_binary = shutil.which("ffmpeg")
+    if ffmpeg_binary is None:
+        return video_path
+
+    source_path = Path(video_path)
+    transcoded_path = source_path.with_name(f"{source_path.stem}_browser{source_path.suffix}")
+
+    command = [
+        ffmpeg_binary,
+        "-y",
+        "-i",
+        str(source_path),
+        "-an",
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-movflags",
+        "+faststart",
+        str(transcoded_path),
+    ]
+
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except (OSError, subprocess.CalledProcessError):
+        if transcoded_path.exists():
+            transcoded_path.unlink()
+        return video_path
+
+    transcoded_path.replace(source_path)
+    return str(source_path)
 
 
 def track_video(
@@ -92,6 +128,7 @@ def track_video(
 
     capture.release()
     writer.release()
+    output_video_path = _transcode_for_browser(output_video_path)
 
     payload = {
         "video_path": video_path,
