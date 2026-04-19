@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: aerotrack-demo
+    name: aerotrack
     runtime: docker
     plan: free
     region: oregon
