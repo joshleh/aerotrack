@@ -743,6 +743,7 @@ def render_homepage() -> HTMLResponse:
           </p>
           <div class="hero-links">
             <a class="button" href="/docs">Open API Docs</a>
+            <a class="button secondary" href="https://github.com/joshleh/aerotrack" target="_blank" rel="noreferrer">GitHub Repository</a>
             __MLFLOW_LINK__
           </div>
           <div class="hero-meta">
