@@ -4,6 +4,8 @@
 
 Current status: the full system is operational and browser-demo ready today. The repo includes a validated baseline checkpoint at `models/aerotrack-detector-validation.pt` plus a stronger RTX 4070 Ti-trained checkpoint at `models/aerotrack-detector-demo-v2.pt` for local evaluation and project review. For the free public Render deployment, the live site uses a lighter `yolov8n.pt` model so the demo stays responsive on CPU.
 
+![AeroTrack browser demo](docs/images/aerotrack-demo-samples.png)
+
 This project is intentionally framed around Anduril-relevant capabilities:
 
 - aerial perception on drone imagery

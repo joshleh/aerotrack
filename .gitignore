@@ -14,3 +14,4 @@ outputs/
 artifacts/
 yolo11n.pt
 models/yolov8m.pt
+docs/images/*-local.png
