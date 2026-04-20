@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+import os
+
 from fastapi.responses import HTMLResponse
 
 
 def render_homepage() -> HTMLResponse:
+    mlflow_ui_url = os.getenv("MLFLOW_UI_URL", "").strip()
+    mlflow_link_html = (
+        '<a class="button secondary" href="#" id="mlflow-link" target="_blank" rel="noreferrer">Open MLflow</a>'
+        if mlflow_ui_url
+        else ""
+    )
     html = """<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -739,7 +747,7 @@ def render_homepage() -> HTMLResponse:
           </p>
           <div class="hero-links">
             <a class="button" href="/docs">Open API Docs</a>
-            <a class="button secondary" href="#" id="mlflow-link" target="_blank" rel="noreferrer">Open MLflow</a>
+            __MLFLOW_LINK__
           </div>
           <div class="hero-meta">
             <div class="hero-meta-item">
@@ -755,7 +763,7 @@ def render_homepage() -> HTMLResponse:
               <div class="hero-meta-value">Keeps the same object ID across frames</div>
             </div>
           </div>
-          <div class="notice">
+          <div class="notice" id="runtime-notice">
             This public demo uses the stronger model trained on a more powerful machine (RTX 4070 Ti). The website
             itself runs that model on a CPU so visitors can try the system in a more accessible web setup.
           </div>
@@ -921,9 +929,12 @@ def render_homepage() -> HTMLResponse:
           document.getElementById("status-version").textContent = metadata.version;
           document.getElementById("status-device").textContent = formatProcessor(metadata.device);
           document.getElementById("status-model").textContent = formatModelDisplayName(metadata.model_path);
+          document.getElementById("runtime-notice").textContent = formatRuntimeNotice(metadata.model_path);
           if (metadata.mlflow_ui_url) {
-            mlflowLink.href = metadata.mlflow_ui_url;
-          } else {
+            if (mlflowLink) {
+              mlflowLink.href = metadata.mlflow_ui_url;
+            }
+          } else if (mlflowLink) {
             mlflowLink.hidden = true;
           }
         } catch (error) {
@@ -931,7 +942,10 @@ def render_homepage() -> HTMLResponse:
           document.getElementById("status-version").textContent = "n/a";
           document.getElementById("status-device").textContent = "N/A";
           document.getElementById("status-model").textContent = "N/A";
-          document.getElementById("mlflow-link").hidden = true;
+          const mlflowLink = document.getElementById("mlflow-link");
+          if (mlflowLink) {
+            mlflowLink.hidden = true;
+          }
         }
       }
 
@@ -967,10 +981,20 @@ def render_homepage() -> HTMLResponse:
         const knownModels = {
           "aerotrack-detector-demo-v2.pt": "AeroTrack Detector v2",
           "aerotrack-detector-validation.pt": "AeroTrack Validation Model",
+          "yolov8n.pt": "YOLOv8n Live Demo Model",
+          "yolov8s.pt": "YOLOv8s Live Demo Model",
           "yolov8m.pt": "YOLOv8m Base Model",
         };
 
         return knownModels[fileName] || fileName;
+      }
+
+      function formatRuntimeNotice(modelPath) {
+        const fileName = String(modelPath || "").trim().split("/").filter(Boolean).pop() || "";
+        if (fileName === "yolov8n.pt" || fileName === "yolov8s.pt") {
+          return "This public demo uses a lighter live model on CPU so the site stays responsive on a free web instance. The repo still includes the stronger RTX 4070 Ti-trained AeroTrack detector for local evaluation and project review.";
+        }
+        return "This public demo uses the stronger model trained on a more powerful machine (RTX 4070 Ti). The website itself runs that model on a CPU so visitors can try the system in a more accessible web setup.";
       }
 
       function drawDetections(canvas, image, detections) {
@@ -1211,4 +1235,5 @@ def render_homepage() -> HTMLResponse:
   </body>
 </html>
 """
+    html = html.replace("__MLFLOW_LINK__", mlflow_link_html)
     return HTMLResponse(content=html)

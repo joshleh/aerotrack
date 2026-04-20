@@ -2,7 +2,7 @@
 
 `AeroTrack` is an end-to-end MLOps pipeline for multi-object detection and tracking on aerial drone footage. It is built to look and feel like a real perception-system project: public aerial data ingestion, YOLOv8 fine-tuning, Kalman filter-based tracking via ByteTrack, experiment tracking in MLflow, and a containerized FastAPI inference surface for detection and clip-level tracking.
 
-Current status: the full system is operational and browser-demo ready today. The repo includes a validated baseline checkpoint at `models/aerotrack-detector-validation.pt` plus a stronger RTX 4070 Ti-trained checkpoint at `models/aerotrack-detector-demo-v2.pt`, which is now the recommended demo and deployment model.
+Current status: the full system is operational and browser-demo ready today. The repo includes a validated baseline checkpoint at `models/aerotrack-detector-validation.pt` plus a stronger RTX 4070 Ti-trained checkpoint at `models/aerotrack-detector-demo-v2.pt`. For the free public Render deployment, the live site uses a lighter `yolov8n.pt` model so the demo stays responsive on CPU.
 
 This project is intentionally framed around Anduril-relevant capabilities:
 
@@ -365,7 +365,7 @@ The default registry name is `aerotrack-detector`.
 
 Open MLflow at [http://localhost:5001](http://localhost:5001) to inspect runs, compare metrics, and browse model registry entries.
 
-The current public demo model in this repo is [models/aerotrack-detector-demo-v2.pt](/Users/joshu/aerotrack/models/aerotrack-detector-demo-v2.pt), produced from the stronger RTX 4070 Ti training pass documented in [docs/gpu_run_handoff.md](/Users/joshu/aerotrack/docs/gpu_run_handoff.md).
+The repo includes the stronger public-facing checkpoint [models/aerotrack-detector-demo-v2.pt](/Users/joshu/aerotrack/models/aerotrack-detector-demo-v2.pt), produced from the RTX 4070 Ti training pass documented in [docs/gpu_run_handoff.md](/Users/joshu/aerotrack/docs/gpu_run_handoff.md). The free Render deployment uses a lighter `yolov8n.pt` live model so browser inference remains stable on CPU.
 
 ## Local training note
 

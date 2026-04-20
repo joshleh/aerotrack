@@ -12,7 +12,7 @@ services:
       - key: API_HOST
         value: 0.0.0.0
       - key: AEROTRACK_MODEL_PATH
-        value: /app/models/aerotrack-detector-demo-v2.pt
+        value: yolov8n.pt
       - key: AEROTRACK_MODEL_URL
         sync: false
       - key: AEROTRACK_DEVICE
@@ -22,9 +22,9 @@ services:
       - key: AEROTRACK_IOU
         value: "0.45"
       - key: AEROTRACK_PREDICT_IMGSZ
-        value: "512"
+        value: "384"
       - key: AEROTRACK_TRACK_MAX_FRAMES
-        value: "4"
+        value: "2"
       - key: AEROTRACK_OUTPUT_DIR
         value: /app/outputs
       - key: MLFLOW_UI_URL
