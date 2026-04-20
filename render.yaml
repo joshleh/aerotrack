@@ -21,6 +21,10 @@ services:
         value: "0.25"
       - key: AEROTRACK_IOU
         value: "0.45"
+      - key: AEROTRACK_PREDICT_IMGSZ
+        value: "512"
+      - key: AEROTRACK_TRACK_MAX_FRAMES
+        value: "4"
       - key: AEROTRACK_OUTPUT_DIR
         value: /app/outputs
       - key: MLFLOW_UI_URL

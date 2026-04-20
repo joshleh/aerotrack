@@ -13,7 +13,9 @@ import supervision as sv
 
 from src.utils import (
     annotate_frame,
+    get_inference_imgsz,
     get_inference_device,
+    get_track_max_frames,
     load_yolo_model,
     save_json,
 )
@@ -64,6 +66,8 @@ def track_video(
     model = load_yolo_model(model_path)
     tracker = sv.ByteTrack()
     device = get_inference_device()
+    imgsz = get_inference_imgsz()
+    max_frames = get_track_max_frames()
 
     capture = cv2.VideoCapture(video_path)
     if not capture.isOpened():
@@ -87,6 +91,9 @@ def track_video(
     frame_index = 0
 
     while True:
+        if max_frames is not None and frame_index >= max_frames:
+            break
+
         success, frame = capture.read()
         if not success:
             break
@@ -94,6 +101,8 @@ def track_video(
         predict_kwargs = {"conf": conf, "iou": iou, "verbose": False}
         if device:
             predict_kwargs["device"] = device
+        if imgsz:
+            predict_kwargs["imgsz"] = imgsz
         result = model.predict(frame, **predict_kwargs)[0]
         detections = sv.Detections.from_ultralytics(result)
         tracked = tracker.update_with_detections(detections)

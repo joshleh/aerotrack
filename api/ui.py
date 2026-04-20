@@ -811,7 +811,7 @@ def render_homepage() -> HTMLResponse:
               </div>
               <input id="track-file" type="file" name="file" accept="video/*" required />
             </div>
-            <div class="input-note">Use the built-in sample clip for a quick proof run, or upload a short clip of your own.</div>
+            <div class="input-note">Use the built-in sample clip for a quick proof run, or upload a short clip of your own. The public demo processes a short clip window for speed.</div>
             <button type="submit">Run Tracking</button>
             <div class="status" id="track-status"></div>
           </form>
@@ -924,17 +924,14 @@ def render_homepage() -> HTMLResponse:
           if (metadata.mlflow_ui_url) {
             mlflowLink.href = metadata.mlflow_ui_url;
           } else {
-            mlflowLink.setAttribute("aria-disabled", "true");
-            mlflowLink.style.pointerEvents = "none";
-            mlflowLink.style.opacity = "0.55";
-            mlflowLink.textContent = "MLflow URL not configured";
+            mlflowLink.hidden = true;
           }
         } catch (error) {
           document.getElementById("status-health").textContent = "Unavailable";
           document.getElementById("status-version").textContent = "n/a";
           document.getElementById("status-device").textContent = "N/A";
           document.getElementById("status-model").textContent = "N/A";
-          document.getElementById("mlflow-link").textContent = "MLflow unavailable";
+          document.getElementById("mlflow-link").hidden = true;
         }
       }
 

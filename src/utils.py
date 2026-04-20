@@ -51,6 +51,21 @@ def get_inference_device() -> str | None:
     return os.getenv("AEROTRACK_DEVICE")
 
 
+def get_optional_int_env(name: str) -> int | None:
+    value = os.getenv(name)
+    if value in {None, ""}:
+        return None
+    return int(value)
+
+
+def get_inference_imgsz() -> int | None:
+    return get_optional_int_env("AEROTRACK_PREDICT_IMGSZ")
+
+
+def get_track_max_frames() -> int | None:
+    return get_optional_int_env("AEROTRACK_TRACK_MAX_FRAMES")
+
+
 def xyxy_to_xywh(xyxy: list[float]) -> list[float]:
     x1, y1, x2, y2 = xyxy
     return [x1, y1, x2 - x1, y2 - y1]

@@ -1,8 +1,8 @@
-# aerotrack
+# AeroTrack
 
-`aerotrack` is an end-to-end MLOps pipeline for multi-object detection and tracking on aerial drone footage. It is built to look and feel like a real perception-system project: public aerial data ingestion, YOLOv8 fine-tuning, Kalman filter-based tracking via ByteTrack, experiment tracking in MLflow, and a containerized FastAPI inference surface for detection and clip-level tracking.
+`AeroTrack` is an end-to-end MLOps pipeline for multi-object detection and tracking on aerial drone footage. It is built to look and feel like a real perception-system project: public aerial data ingestion, YOLOv8 fine-tuning, Kalman filter-based tracking via ByteTrack, experiment tracking in MLflow, and a containerized FastAPI inference surface for detection and clip-level tracking.
 
-Current status: the full system is operational and browser-demo ready today. The repo includes the validated baseline checkpoint at `models/aerotrack-detector-validation.pt` plus a stronger RTX 4070 Ti-trained checkpoint at `models/aerotrack-detector-demo-v2.pt`, which is now the recommended demo and deployment model.
+Current status: the full system is operational and browser-demo ready today. The repo includes a validated baseline checkpoint at `models/aerotrack-detector-validation.pt` plus a stronger RTX 4070 Ti-trained checkpoint at `models/aerotrack-detector-demo-v2.pt`, which is now the recommended demo and deployment model.
 
 This project is intentionally framed around Anduril-relevant capabilities:
 
@@ -14,7 +14,7 @@ This project is intentionally framed around Anduril-relevant capabilities:
 
 ## Why this project
 
-Anduril-style perception work sits at the intersection of modern deep learning, classical tracking, and operational ML systems. `aerotrack` demonstrates all three:
+Anduril-style perception work sits at the intersection of modern deep learning, classical tracking, and operational ML systems. `AeroTrack` demonstrates all three:
 
 - `YOLOv8` handles contemporary object detection
 - `ByteTrack` provides persistent IDs across frames using a Kalman filter-based MOT pipeline
@@ -93,13 +93,30 @@ VisDrone is a strong fit for this project because it contains publicly available
 ```text
 aerotrack/
 ├── api/
+│   ├── artifacts.py
 │   ├── main.py
 │   ├── routes/
-│   └── schemas.py
+│   ├── samples.py
+│   ├── schemas.py
+│   └── ui.py
 ├── data/
 │   └── README.md
+├── docs/
+│   ├── demo.md
+│   ├── demo_capture.md
+│   ├── deploy.md
+│   ├── runbook.md
+│   └── windows_gpu_setup.md
+├── examples/
+│   ├── demo_commands.md
+│   ├── detect_response.json
+│   ├── sample_media/
+│   └── track_response.json
 ├── mlflow/
 │   └── mlflow.dockerfile
+├── models/
+│   ├── aerotrack-detector-demo-v2.pt
+│   └── aerotrack-detector-validation.pt
 ├── notebooks/
 │   └── 01_eda.ipynb
 ├── scripts/
@@ -110,18 +127,13 @@ aerotrack/
 │   ├── track.py
 │   ├── train.py
 │   └── utils.py
-├── docs/
-│   ├── demo.md
-│   └── deploy.md
-├── examples/
-│   ├── detect_response.json
-│   └── track_response.json
 ├── .dockerignore
 ├── .env.example
 ├── .env.production.example
 ├── .gitignore
 ├── Dockerfile
 ├── docker-compose.yml
+├── render.yaml
 ├── requirements.txt
 └── README.md
 ```
@@ -154,7 +166,7 @@ Recommended local values:
 ```dotenv
 API_HOST=0.0.0.0
 API_PORT=8000
-AEROTRACK_MODEL_PATH=yolov8m.pt
+AEROTRACK_MODEL_PATH=models/aerotrack-detector-demo-v2.pt
 AEROTRACK_DEVICE=cpu
 AEROTRACK_CONFIDENCE=0.25
 AEROTRACK_IOU=0.45
@@ -165,6 +177,8 @@ MLFLOW_MODEL_NAME=aerotrack-detector
 MLFLOW_BACKEND_STORE_URI=sqlite:////mlflow/mlflow.db
 MLFLOW_ARTIFACT_ROOT=/mlflow/artifacts
 ```
+
+If you want a lighter first-run smoke test with the base Ultralytics weights instead, set `AEROTRACK_MODEL_PATH=yolov8m.pt` and let the model download on first use.
 
 3. Download and prepare VisDrone.
 
@@ -211,6 +225,8 @@ Browser demo:
 http://localhost:8000/
 ```
 
+The homepage includes built-in sample media, so visitors can try both detection and tracking without uploading their own drone files first.
+
 ## Dataset setup
 
 The repository includes a reproducible VisDrone prep flow:
@@ -222,7 +238,7 @@ This means a fresh clone can move from raw data to training-ready layout with a 
 
 For a Windows-specific GPU setup flow, see [docs/windows_gpu_setup.md](/Users/joshu/aerotrack/docs/windows_gpu_setup.md).
 
-For the saved RTX 4070 Ti training handoff and next-step notes, see [docs/gpu_run_handoff.md](/Users/joshu/aerotrack/docs/gpu_run_handoff.md).
+For the RTX 4070 Ti training run summary, command, and resulting checkpoint details, see [docs/gpu_run_handoff.md](/Users/joshu/aerotrack/docs/gpu_run_handoff.md).
 
 ## Inference API
 
@@ -281,7 +297,8 @@ Example response:
   ],
   "annotated_video_path": "/app/outputs/clip_tracked.mp4",
   "metadata": {
-    "source_filename": "clip.mp4"
+    "source_filename": "clip.mp4",
+    "annotated_video_url": "/artifacts/clip_tracked.mp4"
   }
 }
 ```
@@ -321,7 +338,7 @@ Windows PowerShell example:
 ```powershell
 $env:MPLCONFIGDIR = "$PWD\.venv\var\mplconfig"
 $env:YOLO_CONFIG_DIR = "$PWD\.venv\var\ultralytics"
-python -m src.train --model models/yolov8m.pt --data data/visdrone/VisDrone.yaml --epochs 50 --imgsz 1024 --batch 4 --name aerotrack-4070ti --mlflow-tracking-uri file:./mlruns
+python -m src.train --model yolov8m.pt --data data/visdrone/VisDrone.yaml --epochs 50 --imgsz 1024 --batch 4 --name aerotrack-4070ti --mlflow-tracking-uri file:./mlruns
 ```
 
 Run training from the Dockerized API service:
@@ -348,6 +365,8 @@ The default registry name is `aerotrack-detector`.
 
 Open MLflow at [http://localhost:5001](http://localhost:5001) to inspect runs, compare metrics, and browse model registry entries.
 
+The current public demo model in this repo is [models/aerotrack-detector-demo-v2.pt](/Users/joshu/aerotrack/models/aerotrack-detector-demo-v2.pt), produced from the stronger RTX 4070 Ti training pass documented in [docs/gpu_run_handoff.md](/Users/joshu/aerotrack/docs/gpu_run_handoff.md).
+
 ## Local training note
 
 The full default configuration in this repo is designed as a production-style starting point, not a promise that every laptop can train `yolov8m` efficiently on CPU. In local Docker testing, reduced settings such as `--epochs 1 --imgsz 640 --batch 2` are a safer validation path. For the full `imgsz=1024, batch=8` flow, a machine with more memory and ideally GPU acceleration is the better target.
@@ -366,7 +385,8 @@ If you are using this project in an interview, challenge, or portfolio setting, 
 
 That demonstrates modeling, tracking, API design, experiment management, and containerization in one pass.
 
-For a tighter presentation outline, use [docs/demo.md](/Users/joshu/aerotrack/docs/demo.md).
+- For a tighter presentation outline, use [docs/demo.md](/Users/joshu/aerotrack/docs/demo.md).
+- For screenshot and recording order, use [docs/demo_capture.md](/Users/joshu/aerotrack/docs/demo_capture.md).
 
 ## What makes this project credible
 
