@@ -294,16 +294,12 @@ def render_homepage() -> HTMLResponse:
       }
 
       .demo-grid {
-        align-items: stretch;
-      }
-
-      .demo-grid > .panel {
-        height: 100%;
+        align-items: start;
       }
 
       .demo-panel {
         display: grid;
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: auto auto auto;
       }
 
       .demo-copy {
@@ -819,7 +815,7 @@ def render_homepage() -> HTMLResponse:
               </div>
               <input id="track-file" type="file" name="file" accept="video/*" required />
             </div>
-            <div class="input-note">Use the built-in sample clip for a quick proof run, or upload a short clip of your own. The public demo processes a short clip window for speed.</div>
+            <div class="input-note" id="track-input-note">Use the built-in sample clip for a quick proof run, or upload a short clip of your own.</div>
             <button type="submit">Run Tracking</button>
             <div class="status" id="track-status"></div>
           </form>
@@ -878,7 +874,7 @@ def render_homepage() -> HTMLResponse:
               <span class="runtime-value">MLflow + Saved Artifacts</span>
             </div>
           </div>
-          <div class="runtime-note">
+          <div class="runtime-note" id="runtime-footnote">
             The public demo is running on a CPU, while still using the stronger trained model, so visitors can try the
             same system in a straightforward browser experience.
           </div>
@@ -915,6 +911,8 @@ def render_homepage() -> HTMLResponse:
     </main>
 
     <script>
+      let currentModelPath = "";
+
       async function loadStatus() {
         try {
           const [healthResponse, metadataResponse] = await Promise.all([
@@ -924,12 +922,15 @@ def render_homepage() -> HTMLResponse:
           const health = await healthResponse.json();
           const metadata = await metadataResponse.json();
           const mlflowLink = document.getElementById("mlflow-link");
+          currentModelPath = metadata.model_path || "";
 
           document.getElementById("status-health").textContent = formatHealthStatus(health.status);
           document.getElementById("status-version").textContent = metadata.version;
           document.getElementById("status-device").textContent = formatProcessor(metadata.device);
           document.getElementById("status-model").textContent = formatModelDisplayName(metadata.model_path);
           document.getElementById("runtime-notice").textContent = formatRuntimeNotice(metadata.model_path);
+          document.getElementById("runtime-footnote").textContent = formatRuntimeFootnote(metadata.model_path);
+          document.getElementById("track-input-note").textContent = formatTrackInputNote(metadata.model_path);
           if (metadata.mlflow_ui_url) {
             if (mlflowLink) {
               mlflowLink.href = metadata.mlflow_ui_url;
@@ -977,7 +978,7 @@ def render_homepage() -> HTMLResponse:
           return "N/A";
         }
 
-        const fileName = normalized.split("/").filter(Boolean).pop() || normalized;
+        const fileName = getModelFileName(modelPath);
         const knownModels = {
           "aerotrack-detector-demo-v2.pt": "AeroTrack Detector v2",
           "aerotrack-detector-validation.pt": "AeroTrack Validation Model",
@@ -989,12 +990,34 @@ def render_homepage() -> HTMLResponse:
         return knownModels[fileName] || fileName;
       }
 
+      function getModelFileName(modelPath) {
+        return String(modelPath || "").trim().split("/").filter(Boolean).pop() || "";
+      }
+
+      function isLightLiveModel(modelPath) {
+        const fileName = getModelFileName(modelPath);
+        return fileName === "yolov8n.pt" || fileName === "yolov8s.pt";
+      }
+
       function formatRuntimeNotice(modelPath) {
-        const fileName = String(modelPath || "").trim().split("/").filter(Boolean).pop() || "";
-        if (fileName === "yolov8n.pt" || fileName === "yolov8s.pt") {
+        if (isLightLiveModel(modelPath)) {
           return "This public demo uses a lighter live model on CPU so the site stays responsive on a free web instance. The repo still includes the stronger RTX 4070 Ti-trained AeroTrack detector for local evaluation and project review.";
         }
         return "This public demo uses the stronger model trained on a more powerful machine (RTX 4070 Ti). The website itself runs that model on a CPU so visitors can try the system in a more accessible web setup.";
+      }
+
+      function formatRuntimeFootnote(modelPath) {
+        if (isLightLiveModel(modelPath)) {
+          return "The free public demo runs on CPU and uses a lighter live model so visitors can test the site reliably in a standard browser.";
+        }
+        return "This local or full-review version is running on CPU while still using the stronger trained model, so you can inspect the same system with the higher-quality checkpoint.";
+      }
+
+      function formatTrackInputNote(modelPath) {
+        if (isLightLiveModel(modelPath)) {
+          return "Use the built-in sample clip for a quick proof run, or upload a short clip of your own. On the free public demo, tracking processes only the first 2 frames so the site stays responsive.";
+        }
+        return "Use the built-in sample clip for a quick proof run, or upload a short clip of your own.";
       }
 
       function drawDetections(canvas, image, detections) {
@@ -1089,7 +1112,7 @@ def render_homepage() -> HTMLResponse:
           return null;
         }
 
-        setStatusMessage("detect-status", "Running detection...", true);
+        setStatusMessage("detect-status", "Running detection. This can take a minute or two for the live demo.", true);
         result.hidden = true;
 
         const formData = new FormData();
@@ -1143,7 +1166,10 @@ def render_homepage() -> HTMLResponse:
           return null;
         }
 
-        setStatusMessage("track-status", "Running tracking. This can take a minute for the live demo.", true);
+        const trackStatusMessage = isLightLiveModel(currentModelPath)
+          ? "Running tracking. The free public demo processes only the first 2 frames and can still take a minute or two."
+          : "Running tracking. This can take a minute or two for the live demo.";
+        setStatusMessage("track-status", trackStatusMessage, true);
         result.hidden = true;
 
         const formData = new FormData();
@@ -1211,7 +1237,7 @@ def render_homepage() -> HTMLResponse:
       });
 
       document.getElementById("detect-sample").addEventListener("click", async () => {
-        setStatusMessage("detect-status", "Loading bundled sample frame...", true);
+        setStatusMessage("detect-status", "Loading bundled sample frame. The live demo may take a minute or two to respond.", true);
         try {
           const file = await fetchSampleAsFile("/samples/sample_frame.jpg", "sample_frame.jpg", "image/jpeg");
           await runDetection(file);
@@ -1221,7 +1247,7 @@ def render_homepage() -> HTMLResponse:
       });
 
       document.getElementById("track-sample").addEventListener("click", async () => {
-        setStatusMessage("track-status", "Loading bundled sample clip...", true);
+        setStatusMessage("track-status", "Loading bundled sample clip. The live demo may take a minute or two to respond.", true);
         try {
           const file = await fetchSampleAsFile("/samples/sample_clip.mp4", "sample_clip.mp4", "video/mp4");
           await runTracking(file);
