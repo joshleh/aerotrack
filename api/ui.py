@@ -903,7 +903,7 @@ def render_homepage() -> HTMLResponse:
             </div>
             <div class="feature">
               <h3>Built With</h3>
-              <p>YOLOv8m, ByteTrack, FastAPI, and MLflow power the training, tracking, API, and experiment history behind this demo.</p>
+              <p id="built-with-copy">YOLOv8m, ByteTrack, FastAPI, and MLflow power the training, tracking, API, and experiment history behind this demo.</p>
             </div>
           </div>
         </section>
@@ -931,6 +931,7 @@ def render_homepage() -> HTMLResponse:
           document.getElementById("runtime-notice").textContent = formatRuntimeNotice(metadata.model_path);
           document.getElementById("runtime-footnote").textContent = formatRuntimeFootnote(metadata.model_path);
           document.getElementById("track-input-note").textContent = formatTrackInputNote(metadata.model_path);
+          document.getElementById("built-with-copy").textContent = formatBuiltWithCopy(metadata.model_path);
           if (metadata.mlflow_ui_url) {
             if (mlflowLink) {
               mlflowLink.href = metadata.mlflow_ui_url;
@@ -1001,9 +1002,9 @@ def render_homepage() -> HTMLResponse:
 
       function formatRuntimeNotice(modelPath) {
         if (isLightLiveModel(modelPath)) {
-          return "This public demo uses a lighter live model on CPU so the site stays responsive on a free web instance. The repo still includes the stronger RTX 4070 Ti-trained AeroTrack detector for local evaluation and project review.";
+          return "This public demo uses a lighter live model on CPU so the site stays responsive on a free web instance. The repo still includes the stronger GPU-trained (RTX 4070 Ti) AeroTrack detector for local evaluation and project review.";
         }
-        return "This public demo uses the stronger model trained on a more powerful machine (RTX 4070 Ti). The website itself runs that model on a CPU so visitors can try the system in a more accessible web setup.";
+        return "This version uses the stronger GPU-trained (RTX 4070 Ti) AeroTrack detector. The website itself runs that model on CPU so visitors can try the system in a more accessible web setup.";
       }
 
       function formatRuntimeFootnote(modelPath) {
@@ -1018,6 +1019,13 @@ def render_homepage() -> HTMLResponse:
           return "Use the built-in sample clip for a quick proof run, or upload a short clip of your own. On the free public demo, tracking processes only the first 2 frames so the site stays responsive.";
         }
         return "Use the built-in sample clip for a quick proof run, or upload a short clip of your own.";
+      }
+
+      function formatBuiltWithCopy(modelPath) {
+        if (isLightLiveModel(modelPath)) {
+          return "YOLOv8n, ByteTrack, FastAPI, and MLflow power the live public demo, while the repo also includes the stronger GPU-trained AeroTrack detector for local evaluation and project review.";
+        }
+        return "The stronger GPU-trained AeroTrack detector, ByteTrack, FastAPI, and MLflow power the training, tracking, API, and experiment history behind this demo.";
       }
 
       function drawDetections(canvas, image, detections) {
