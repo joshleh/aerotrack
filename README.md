@@ -107,6 +107,7 @@ aerotrack/
 │   ├── demo.md
 │   ├── demo_capture.md
 │   ├── deploy.md
+│   ├── gpu_training_summary.md
 │   ├── runbook.md
 │   └── windows_gpu_setup.md
 ├── examples/
@@ -240,7 +241,7 @@ This means a fresh clone can move from raw data to training-ready layout with a 
 
 For a Windows-specific GPU setup flow, see [docs/windows_gpu_setup.md](/Users/joshu/aerotrack/docs/windows_gpu_setup.md).
 
-For the RTX 4070 Ti training run summary, command, and resulting checkpoint details, see [docs/gpu_run_handoff.md](/Users/joshu/aerotrack/docs/gpu_run_handoff.md).
+For the RTX 4070 Ti training summary, command, and resulting checkpoint details, see [docs/gpu_training_summary.md](/Users/joshu/aerotrack/docs/gpu_training_summary.md).
 
 ## Inference API
 
@@ -367,7 +368,7 @@ The default registry name is `aerotrack-detector`.
 
 Open MLflow at [http://localhost:5001](http://localhost:5001) to inspect runs, compare metrics, and browse model registry entries.
 
-For local evaluation and project review, the repo includes the stronger checkpoint [models/aerotrack-detector-demo-v2.pt](/Users/joshu/aerotrack/models/aerotrack-detector-demo-v2.pt), produced from the RTX 4070 Ti training pass documented in [docs/gpu_run_handoff.md](/Users/joshu/aerotrack/docs/gpu_run_handoff.md). The free Render deployment uses a lighter `yolov8n.pt` live model so browser inference remains stable on CPU.
+For local evaluation and project review, the repo includes the stronger checkpoint [models/aerotrack-detector-demo-v2.pt](/Users/joshu/aerotrack/models/aerotrack-detector-demo-v2.pt), produced from the RTX 4070 Ti training pass documented in [docs/gpu_training_summary.md](/Users/joshu/aerotrack/docs/gpu_training_summary.md). The free Render deployment uses a lighter `yolov8n.pt` live model so browser inference remains stable on CPU.
 
 ## Local training note
 

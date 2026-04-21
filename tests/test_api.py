@@ -29,6 +29,15 @@ class AerotrackApiTests(unittest.TestCase):
         self.assertIn("AeroTrack Demo", response.text)
         self.assertIn("Try Sample Detection", response.text)
         self.assertIn("Try Sample Tracking", response.text)
+        self.assertIn("GitHub Repository", response.text)
+        self.assertNotIn("Open MLflow", response.text)
+
+    @patch.dict("os.environ", {"MLFLOW_UI_URL": "https://mlflow.example.com"}, clear=False)
+    def test_homepage_renders_mlflow_link_when_configured(self) -> None:
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Open MLflow", response.text)
 
     @patch.dict(
         "os.environ",

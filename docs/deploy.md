@@ -109,14 +109,14 @@ MLFLOW_ARTIFACT_ROOT=/mlflow/artifacts
 
 The repository includes [render.yaml](/Users/joshu/aerotrack/render.yaml), which defines a free Render web service for the demo app.
 
-The current repo is also set up to bundle the stronger RTX 4070 Ti checkpoint directly under `models/` so the public deployment can work immediately without requiring an external model host. Later, you can still switch to `AEROTRACK_MODEL_URL` if you want to ship a newer model without committing it into the repo.
+The current Blueprint is tuned for a stable free-tier live demo. It intentionally points the public Render deployment at the lighter `yolov8n.pt` model so the site stays responsive on CPU. The repo still includes the stronger RTX 4070 Ti-trained checkpoint under `models/` for local evaluation, project review, and higher-capacity deployments.
 
 Suggested flow:
 
 1. Push the latest repo state to GitHub.
 2. In Render, create a new Blueprint from the repo.
 3. Keep the service on the `free` plan.
-4. Set `AEROTRACK_MODEL_URL` to a public direct-download URL for your chosen checkpoint.
+4. Leave `AEROTRACK_MODEL_URL` blank unless you want the container to fetch a custom checkpoint at startup.
 5. Optionally set `MLFLOW_UI_URL` if you want the homepage to link to a hosted MLflow instance.
 6. Deploy and verify `/health`, `/metadata`, `/detect`, and `/track`.
 
@@ -144,7 +144,7 @@ If you want a cheap live demo:
 
 1. Deploy the API container first
 2. Start with CPU inference
-3. Use a pre-exported trained weight file via `AEROTRACK_MODEL_URL`
+3. Start with the lighter bundled live model or use `AEROTRACK_MODEL_URL` for a custom checkpoint
 4. Keep request sizes small for demo clips
 5. Treat MLflow as optional for the public demo if operating two services is too much friction
 

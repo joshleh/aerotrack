@@ -5,8 +5,63 @@ import os
 from fastapi.responses import HTMLResponse
 
 
+def _get_model_file_name(model_path: str) -> str:
+    return model_path.strip().split("/")[-1] if model_path.strip() else ""
+
+
+def _is_light_live_model(model_path: str) -> bool:
+    return _get_model_file_name(model_path) in {"yolov8n.pt", "yolov8s.pt"}
+
+
+def _format_runtime_notice(model_path: str) -> str:
+    if _is_light_live_model(model_path):
+        return (
+            "This public demo uses a lighter live model on CPU so the site stays responsive on a free web "
+            "instance. The repo still includes the stronger GPU-trained (RTX 4070 Ti) AeroTrack detector for "
+            "local evaluation and project review."
+        )
+    return (
+        "This version uses the stronger GPU-trained (RTX 4070 Ti) AeroTrack detector. The website itself runs "
+        "that model on CPU so visitors can try the system in a more accessible web setup."
+    )
+
+
+def _format_runtime_footnote(model_path: str) -> str:
+    if _is_light_live_model(model_path):
+        return (
+            "The free public demo runs on CPU and uses a lighter live model so visitors can test the site "
+            "reliably in a standard browser."
+        )
+    return (
+        "This local or full-review version is running on CPU while still using the stronger trained model, so "
+        "you can inspect the same system with the higher-quality checkpoint."
+    )
+
+
+def _format_track_input_note(model_path: str) -> str:
+    if _is_light_live_model(model_path):
+        return (
+            "Use the built-in sample clip for a quick proof run, or upload a short clip of your own. On the "
+            "free public demo, tracking processes only the first 2 frames so the site stays responsive."
+        )
+    return "Use the built-in sample clip for a quick proof run, or upload a short clip of your own."
+
+
+def _format_built_with_copy(model_path: str) -> str:
+    if _is_light_live_model(model_path):
+        return (
+            "YOLOv8n, ByteTrack, FastAPI, and MLflow power the live public demo, while the repo also includes "
+            "the stronger GPU-trained AeroTrack detector for local evaluation and project review."
+        )
+    return (
+        "The stronger GPU-trained AeroTrack detector, ByteTrack, FastAPI, and MLflow power the training, "
+        "tracking, API, and experiment history behind this demo."
+    )
+
+
 def render_homepage() -> HTMLResponse:
     mlflow_ui_url = os.getenv("MLFLOW_UI_URL", "").strip()
+    current_model_path = os.getenv("AEROTRACK_MODEL_PATH", "").strip()
     mlflow_link_html = (
         '<a class="button secondary" href="#" id="mlflow-link" target="_blank" rel="noreferrer">Open MLflow</a>'
         if mlflow_ui_url
@@ -761,8 +816,7 @@ def render_homepage() -> HTMLResponse:
             </div>
           </div>
           <div class="notice" id="runtime-notice">
-            This public demo uses the stronger model trained on a more powerful machine (RTX 4070 Ti). The website
-            itself runs that model on a CPU so visitors can try the system in a more accessible web setup.
+            __INITIAL_RUNTIME_NOTICE__
           </div>
         </article>
       </section>
@@ -816,7 +870,7 @@ def render_homepage() -> HTMLResponse:
               </div>
               <input id="track-file" type="file" name="file" accept="video/*" required />
             </div>
-            <div class="input-note" id="track-input-note">Use the built-in sample clip for a quick proof run, or upload a short clip of your own.</div>
+            <div class="input-note" id="track-input-note">__INITIAL_TRACK_INPUT_NOTE__</div>
             <button type="submit">Run Tracking</button>
             <div class="status" id="track-status"></div>
           </form>
@@ -876,8 +930,7 @@ def render_homepage() -> HTMLResponse:
             </div>
           </div>
           <div class="runtime-note" id="runtime-footnote">
-            The public demo is running on a CPU, while still using the stronger trained model, so visitors can try the
-            same system in a straightforward browser experience.
+            __INITIAL_RUNTIME_FOOTNOTE__
           </div>
         </aside>
 
@@ -904,7 +957,7 @@ def render_homepage() -> HTMLResponse:
             </div>
             <div class="feature">
               <h3>Built With</h3>
-              <p id="built-with-copy">YOLOv8m, ByteTrack, FastAPI, and MLflow power the training, tracking, API, and experiment history behind this demo.</p>
+              <p id="built-with-copy">__INITIAL_BUILT_WITH_COPY__</p>
             </div>
           </div>
         </section>
@@ -1271,4 +1324,8 @@ def render_homepage() -> HTMLResponse:
 </html>
 """
     html = html.replace("__MLFLOW_LINK__", mlflow_link_html)
+    html = html.replace("__INITIAL_RUNTIME_NOTICE__", _format_runtime_notice(current_model_path))
+    html = html.replace("__INITIAL_RUNTIME_FOOTNOTE__", _format_runtime_footnote(current_model_path))
+    html = html.replace("__INITIAL_TRACK_INPUT_NOTE__", _format_track_input_note(current_model_path))
+    html = html.replace("__INITIAL_BUILT_WITH_COPY__", _format_built_with_copy(current_model_path))
     return HTMLResponse(content=html)

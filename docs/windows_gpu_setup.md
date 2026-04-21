@@ -59,14 +59,14 @@ Run this from the repo root in the activated virtual environment:
 ```powershell
 $env:MPLCONFIGDIR = "$PWD\.venv\var\mplconfig"
 $env:YOLO_CONFIG_DIR = "$PWD\.venv\var\ultralytics"
-python -m src.train --model models/yolov8m.pt --data data/visdrone/VisDrone.yaml --epochs 50 --imgsz 1024 --batch 4 --name aerotrack-4070ti --mlflow-tracking-uri file:./mlruns
+python -m src.train --model yolov8m.pt --data data/visdrone/VisDrone.yaml --epochs 50 --imgsz 1024 --batch 4 --name aerotrack-4070ti --mlflow-tracking-uri file:./mlruns
 ```
 
 Why `batch 4` instead of `8`:
 
-- the handoff suggested `8`, but this exact machine already has some VRAM in use before training starts
 - `yolov8m` at `imgsz 1024` on a 12 GB card can be tight, especially on Windows WDDM
-- `batch 4` is a safer first run, and you can raise it after you confirm memory headroom
+- `batch 4` is a safer first run for this hardware profile
+- once the first run is stable, you can raise the batch size after checking VRAM headroom
 
 That command logs MLflow artifacts into the local `mlruns/` directory without needing a separate tracking server.
 
@@ -75,7 +75,7 @@ If the first run is stable and VRAM usage stays comfortable, try `--batch 6` on 
 ```powershell
 $env:MPLCONFIGDIR = "$PWD\.venv\var\mplconfig"
 $env:YOLO_CONFIG_DIR = "$PWD\.venv\var\ultralytics"
-python -m src.train --model models/yolov8m.pt --data data/visdrone/VisDrone.yaml --epochs 50 --imgsz 1024 --batch 4 --name aerotrack-4070ti --mlflow-tracking-uri http://127.0.0.1:5001
+python -m src.train --model yolov8m.pt --data data/visdrone/VisDrone.yaml --epochs 50 --imgsz 1024 --batch 4 --name aerotrack-4070ti --mlflow-tracking-uri http://127.0.0.1:5001
 ```
 
 ## Practical tip
