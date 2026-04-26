@@ -12,3 +12,12 @@ torch==2.4.1
 torchvision==0.19.1
 jupyter==1.1.1
 notebook==7.2.2
+onnx==1.16.2
+onnxruntime==1.19.2
+onnxsim==0.4.36
+onnxslim==0.1.34
+albumentations==1.4.21
+matplotlib==3.9.2
+
+# Optional CUDA host replacement for ONNX Runtime GPU benchmarking:
+# onnxruntime-gpu==1.19.2

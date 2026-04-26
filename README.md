@@ -1,55 +1,53 @@
 # AeroTrack
 
-`AeroTrack` is an end-to-end MLOps pipeline for multi-object detection and tracking on aerial drone footage. It is built to look and feel like a real perception-system project: public aerial data ingestion, YOLOv8 fine-tuning, Kalman filter-based tracking via ByteTrack, experiment tracking in MLflow, and a containerized FastAPI inference surface for detection and clip-level tracking.
+[![CI](https://github.com/joshleh/aerotrack/actions/workflows/ci.yml/badge.svg)](https://github.com/joshleh/aerotrack/actions/workflows/ci.yml)
 
-Current status: the full system is operational and browser-demo ready today. The repo includes a validated baseline checkpoint at `models/aerotrack-detector-validation.pt` plus a stronger RTX 4070 Ti-trained checkpoint at `models/aerotrack-detector-demo-v2.pt` for local evaluation and project review. For the free public Render deployment, the live site uses a lighter `yolov8n.pt` model so the demo stays responsive on CPU.
+`AeroTrack` is an end-to-end MLOps pipeline for multi-object detection and tracking on aerial drone footage using YOLOv8, ByteTrack, FastAPI, MLflow, Docker, and VisDrone.
+
+Current status: the full system is operational and browser-demo ready. The repo includes the stronger RTX 4070 Ti-trained checkpoint at `models/aerotrack-detector-demo-v2.pt` for local evaluation and a lighter `yolov8n.pt` option for CPU-friendly hosted demos.
+
+## Demo Video
+
+<!-- TODO: replace with YouTube embed -->
 
 ![AeroTrack browser demo](docs/images/aerotrack-demo-samples.png)
 
-This project is intentionally framed around Anduril-relevant capabilities:
+## Model Performance
 
-- aerial perception on drone imagery
-- persistent multi-object tracking
-- real-time inference APIs
-- reproducible model training and experiment tracking
-- model packaging and deployment with Docker
+These metrics come from the saved RTX 4070 Ti validation run documented in [docs/gpu_training_summary.md](docs/gpu_training_summary.md). Regenerate the full report, including the stock baseline row, with:
 
-## Why this project
+```bash
+python scripts/evaluate_mAP.py
+```
 
-Anduril-style perception work sits at the intersection of modern deep learning, classical tracking, and operational ML systems. `AeroTrack` demonstrates all three:
+| Model | Role | mAP@0.5 | mAP@0.5:0.95 | Lowest AP@0.5 classes |
+| --- | --- | ---: | ---: | --- |
+| AeroTrack YOLOv8m fine-tune | VisDrone fine-tuned detector | 0.549 | 0.349 | awning-tricycle (0.250), bicycle (0.334), tricycle (0.455) |
+| Stock YOLOv8n | Zero-shot COCO baseline | pending | pending | Run `scripts/evaluate_mAP.py` |
 
-- `YOLOv8` handles contemporary object detection
-- `ByteTrack` provides persistent IDs across frames using a Kalman filter-based MOT pipeline
-- `MLflow` captures metrics, artifacts, and model versions so experiments are not one-off notebook runs
-- `FastAPI` exposes the system in a form another service or operator workflow could actually call
+VisDrone is a hard aerial dataset: objects are small, dense, occluded, and viewed from unusual top-down angles. Published VisDrone mAP@0.5 numbers for strong detectors are often around `0.40-0.50`, depending on protocol, model scale, and evaluation settings, so the `0.549` project-local Ultralytics validation result should be verified before making a public leaderboard-style claim. This detector is strongest on larger, visually consistent classes such as `car` and `bus`; it struggles most on `bicycle`, `tricycle`, and `awning-tricycle`, where small object size and class ambiguity make both localization and classification harder.
 
-The result is a repo that is closer to a deployable perception service than a one-off computer vision demo.
+Detailed per-class tables live in [docs/model_performance.md](docs/model_performance.md).
 
-## Core capabilities
+## Edge Deployment (ONNX)
 
-- Fine-tune `yolov8m` on `VisDrone2019-DET`
-- Track detections across frames with `ByteTrack`
-- Serve `POST /detect` for single-frame inference
-- Serve `POST /track` for clip-level tracking results
-- Serve a browser-ready demo at `GET /`
-- Log training metrics, plots, and model artifacts to MLflow
-- Run the API and tracking server locally with `docker-compose`
+Export the trained checkpoint to ONNX and benchmark available runtimes:
 
-## Stack
+```bash
+python scripts/export_onnx.py
+python scripts/benchmark_inference.py
+```
 
-| Layer | Tooling |
-| --- | --- |
-| Detection | Ultralytics YOLOv8 |
-| Tracking | Supervision ByteTrack |
-| Inference API | FastAPI |
-| Experiment tracking | MLflow |
-| CV / DL runtime | OpenCV, PyTorch |
-| Packaging | Docker, docker-compose |
-| Dataset | VisDrone2019-DET |
+| Backend | Device | Mean latency (ms) | Throughput (FPS) | Warmup | Iterations |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| PyTorch | CPU | pending local run | pending local run | 10 | 100 |
+| PyTorch | GPU, if available | pending local run | pending local run | 10 | 100 |
+| ONNX Runtime | CPU | pending local run | pending local run | 10 | 100 |
+| ONNX Runtime | GPU, if available | pending local run | pending local run | 10 | 100 |
 
-## Why VisDrone
+ONNX matters for edge deployment because it turns the PyTorch checkpoint into a runtime-agnostic graph with a smaller serving footprint and a path into hardware acceleration stacks such as TensorRT and OpenVINO. ONNX Runtime gives portable execution; TensorRT goes further by compiling a hardware-specific engine with kernel fusion, FP16/INT8 quantization, and GPU-specific optimization. The expected next step is TensorRT INT8 quantization on a Jetson-class device, trading lower latency and power draw against possible mAP degradation from reduced numeric precision.
 
-VisDrone is a strong fit for this project because it contains publicly available drone-captured imagery with dense annotations for pedestrians, cars, vans, buses, trucks, bicycles, and related classes. It is thematically aligned with low-altitude aerial surveillance, urban scene understanding, and persistent object monitoring, which makes it much more compelling here than a generic object detection benchmark.
+The benchmark report is generated at [docs/inference_benchmarks.md](docs/inference_benchmarks.md).
 
 ## Architecture
 
@@ -62,7 +60,7 @@ VisDrone is a strong fit for this project because it contains publicly available
                                   v
                     +-------------+---------------+
                     |         src/train.py        |
-                    | YOLOv8m fine-tuning         |
+                    | YOLOv8 fine-tuning          |
                     | MLflow params + metrics     |
                     +-------------+---------------+
                                   |
@@ -90,78 +88,47 @@ VisDrone is a strong fit for this project because it contains publicly available
                     +-----------------------------+
 ```
 
-## Repository layout
+| Layer | Tooling |
+| --- | --- |
+| Detection | Ultralytics YOLOv8 |
+| Tracking | Supervision ByteTrack |
+| Inference API | FastAPI |
+| Experiment tracking | MLflow |
+| CV / DL runtime | OpenCV, PyTorch, ONNX Runtime |
+| Packaging | Docker, docker-compose |
+| Dataset | VisDrone2019-DET |
 
-```text
-aerotrack/
-├── api/
-│   ├── artifacts.py
-│   ├── main.py
-│   ├── routes/
-│   ├── samples.py
-│   ├── schemas.py
-│   └── ui.py
-├── data/
-│   └── README.md
-├── docs/
-│   ├── demo.md
-│   ├── demo_capture.md
-│   ├── deploy.md
-│   ├── gpu_training_summary.md
-│   ├── runbook.md
-│   └── windows_gpu_setup.md
-├── examples/
-│   ├── demo_commands.md
-│   ├── detect_response.json
-│   ├── sample_media/
-│   └── track_response.json
-├── mlflow/
-│   └── mlflow.dockerfile
-├── models/
-│   ├── aerotrack-detector-demo-v2.pt
-│   └── aerotrack-detector-validation.pt
-├── notebooks/
-│   └── 01_eda.ipynb
-├── scripts/
-│   ├── download_visDrone.sh
-│   └── make_smoke_clip.py
-├── src/
-│   ├── predict.py
-│   ├── track.py
-│   ├── train.py
-│   └── utils.py
-├── .dockerignore
-├── .env.example
-├── .env.production.example
-├── .gitignore
-├── Dockerfile
-├── docker-compose.yml
-├── render.yaml
-├── requirements.txt
-└── README.md
-```
+This project is intentionally framed around Anduril-relevant capabilities: aerial perception, persistent multi-object tracking, real-time inference APIs, reproducible training, model artifact management, and deployment-oriented packaging. The sister project `FusionTrack` handles sensor-fusion math; AeroTrack focuses on detection, tracking, and serving.
 
-## Quickstart
+## Robustness
 
-1. Clone the repository.
+The most deployment-oriented artifact is [notebooks/03_robustness.ipynb](notebooks/03_robustness.ipynb). It loads representative VisDrone validation frames, applies progressive synthetic fog, low light, and motion blur with Albumentations, runs the detector on original and degraded images, and plots detection retention by severity.
+
+Those degradations map to operational conditions:
+
+- fog: low-visibility ISR
+- low light: dusk, night, or underexposed collection
+- motion blur: high-speed platform motion, vibration, or camera slew
+
+Run it locally with:
 
 ```bash
-git clone <your-repo-url>
+jupyter notebook notebooks/03_robustness.ipynb
+```
+
+## How To Run
+
+Clone the repository:
+
+```bash
+git clone https://github.com/joshleh/aerotrack.git
 cd aerotrack
 ```
 
-2. Create your local environment file.
-
-macOS / Linux:
+Create a local environment file:
 
 ```bash
 cp .env.example .env
-```
-
-Windows PowerShell:
-
-```powershell
-Copy-Item .env.example .env
 ```
 
 Recommended local values:
@@ -181,11 +148,13 @@ MLFLOW_BACKEND_STORE_URI=sqlite:////mlflow/mlflow.db
 MLFLOW_ARTIFACT_ROOT=/mlflow/artifacts
 ```
 
-If you want a lighter first-run smoke test with the base Ultralytics weights instead, set `AEROTRACK_MODEL_PATH=yolov8m.pt` and let the model download on first use.
+Install Python dependencies for local scripts:
 
-3. Download and prepare VisDrone.
+```bash
+python -m pip install -r requirements.txt
+```
 
-macOS / Linux:
+Download and prepare VisDrone:
 
 ```bash
 chmod +x scripts/download_visDrone.sh
@@ -198,13 +167,13 @@ Windows PowerShell:
 .\scripts\download_visDrone.ps1
 ```
 
-4. Build and start the stack.
+Build and start the API plus MLflow stack:
 
 ```bash
 docker-compose up --build
 ```
 
-5. Verify the API is live.
+Verify the API:
 
 ```bash
 curl http://localhost:8000/health
@@ -216,38 +185,17 @@ Expected response:
 {"status":"ok"}
 ```
 
-Optional runtime metadata:
-
-```bash
-curl http://localhost:8000/metadata
-```
-
-Browser demo:
+Open the browser demo:
 
 ```text
 http://localhost:8000/
 ```
 
-The homepage includes built-in sample media, so visitors can try both detection and tracking without uploading their own drone files first.
-
-## Dataset setup
-
-The repository includes a reproducible VisDrone prep flow:
-
-- [data/README.md](/Users/joshu/aerotrack/data/README.md) explains the official source and expected output structure
-- [scripts/download_visDrone.sh](/Users/joshu/aerotrack/scripts/download_visDrone.sh) downloads the train / val / test-dev archives, extracts them, converts annotations into YOLO format, and generates `data/visdrone/VisDrone.yaml`
-
-This means a fresh clone can move from raw data to training-ready layout with a single command.
-
-For a Windows-specific GPU setup flow, see [docs/windows_gpu_setup.md](/Users/joshu/aerotrack/docs/windows_gpu_setup.md).
-
-For the RTX 4070 Ti training summary, command, and resulting checkpoint details, see [docs/gpu_training_summary.md](/Users/joshu/aerotrack/docs/gpu_training_summary.md).
+The homepage includes built-in sample media, so visitors can test both detection and tracking without uploading their own drone footage first.
 
 ## Inference API
 
-### `POST /detect`
-
-Single-frame inference via multipart upload:
+Single-frame detection:
 
 ```bash
 curl -X POST "http://localhost:8000/detect" \
@@ -270,9 +218,7 @@ Example response:
 }
 ```
 
-### `POST /track`
-
-Clip-level tracking via multipart upload:
+Clip-level tracking:
 
 ```bash
 curl -X POST "http://localhost:8000/track" \
@@ -306,7 +252,7 @@ Example response:
 }
 ```
 
-To generate a short repeat-frame smoke-test clip from a single image:
+Create a short smoke-test clip from a single image:
 
 ```bash
 python scripts/make_smoke_clip.py \
@@ -314,15 +260,7 @@ python scripts/make_smoke_clip.py \
   --output outputs/smoke.mp4
 ```
 
-If you are working from the Dockerized environment instead of a local Python environment, use:
-
-```bash
-docker-compose exec api python scripts/make_smoke_clip.py \
-  --image data/raw/VisDrone2019-DET-val/images/0000271_01401_d_0000380.jpg \
-  --output outputs/smoke.mp4
-```
-
-## Training and MLflow
+## Training And Evaluation
 
 Run training locally from the repo root:
 
@@ -336,15 +274,7 @@ python -m src.train \
   --mlflow-tracking-uri "$MLFLOW_TRACKING_URI"
 ```
 
-Windows PowerShell example:
-
-```powershell
-$env:MPLCONFIGDIR = "$PWD\.venv\var\mplconfig"
-$env:YOLO_CONFIG_DIR = "$PWD\.venv\var\ultralytics"
-python -m src.train --model yolov8m.pt --data data/visdrone/VisDrone.yaml --epochs 50 --imgsz 1024 --batch 4 --name aerotrack-4070ti --mlflow-tracking-uri file:./mlruns
-```
-
-Run training from the Dockerized API service:
+Run a reduced Docker smoke training pass:
 
 ```bash
 docker-compose exec api python -m src.train \
@@ -355,77 +285,84 @@ docker-compose exec api python -m src.train \
   --mlflow-tracking-uri http://mlflow:5000
 ```
 
-`src/train.py` logs:
+Evaluate mAP:
 
-- hyperparameters
-- per-epoch loss curves
-- `mAP50`
-- `mAP50-95`
-- Ultralytics plots and CSV outputs
-- final model artifact
+```bash
+python scripts/evaluate_mAP.py
+```
 
-The default registry name is `aerotrack-detector`.
+Export ONNX:
 
-Open MLflow at [http://localhost:5001](http://localhost:5001) to inspect runs, compare metrics, and browse model registry entries.
+```bash
+python scripts/export_onnx.py
+```
 
-For local evaluation and project review, the repo includes the stronger checkpoint [models/aerotrack-detector-demo-v2.pt](/Users/joshu/aerotrack/models/aerotrack-detector-demo-v2.pt), produced from the RTX 4070 Ti training pass documented in [docs/gpu_training_summary.md](/Users/joshu/aerotrack/docs/gpu_training_summary.md). The free Render deployment uses a lighter `yolov8n.pt` live model so browser inference remains stable on CPU.
+Benchmark inference:
 
-## Local training note
+```bash
+python scripts/benchmark_inference.py
+```
 
-The full default configuration in this repo is designed as a production-style starting point, not a promise that every laptop can train `yolov8m` efficiently on CPU. In local Docker testing, reduced settings such as `--epochs 1 --imgsz 640 --batch 2` are a safer validation path. For the full `imgsz=1024, batch=8` flow, a machine with more memory and ideally GPU acceleration is the better target.
+Open MLflow at [http://localhost:5001](http://localhost:5001) to inspect runs, compare metrics, and browse artifacts.
 
-On Windows, prefer a Python `3.11` virtual environment for the pinned Torch stack in this repo. The end-to-end setup is documented in [docs/windows_gpu_setup.md](/Users/joshu/aerotrack/docs/windows_gpu_setup.md).
+## Dataset Setup
 
-## Demo checklist
+The repository includes a reproducible VisDrone prep flow:
 
-If you are using this project in an interview, challenge, or portfolio setting, the most effective demo flow is:
+- [data/README.md](data/README.md) explains the official source and expected output structure.
+- [scripts/download_visDrone.sh](scripts/download_visDrone.sh) downloads the train, val, and test-dev archives, extracts them, converts annotations into YOLO format, and generates `data/visdrone/VisDrone.yaml`.
 
-1. Show `docker-compose up --build`
-2. Hit `GET /health`
-3. Run `POST /detect` on a VisDrone frame
-4. Run `POST /track` on a short clip and show persistent IDs
-5. Open MLflow and show the run history plus logged artifacts
+The generated YOLO dataset uses these 10 VisDrone classes:
 
-That demonstrates modeling, tracking, API design, experiment management, and containerization in one pass.
+`pedestrian`, `people`, `bicycle`, `car`, `van`, `truck`, `tricycle`, `awning-tricycle`, `bus`, `motor`
 
-- For a tighter presentation outline, use [docs/demo.md](/Users/joshu/aerotrack/docs/demo.md).
-- For screenshot and recording order, use [docs/demo_capture.md](/Users/joshu/aerotrack/docs/demo_capture.md).
+Ignored regions are skipped during conversion.
 
-## What makes this project credible
+## Repository Layout
 
-- It uses a real aerial dataset rather than generic COCO-only examples
-- It combines deep detection with classical MOT logic
-- It exposes a service boundary instead of stopping at notebook output
-- It tracks experiments and artifacts in MLflow
-- It is packaged so another engineer can run it with Docker
+```text
+aerotrack/
+├── api/
+├── data/
+├── docs/
+│   ├── inference_benchmarks.md
+│   └── model_performance.md
+├── examples/
+├── mlflow/
+├── models/
+│   ├── aerotrack-detector-demo-v2.pt
+│   └── aerotrack-detector-validation.pt
+├── notebooks/
+│   ├── 01_eda.ipynb
+│   └── 03_robustness.ipynb
+├── scripts/
+│   ├── benchmark_inference.py
+│   ├── evaluate_mAP.py
+│   └── export_onnx.py
+├── src/
+├── tests/
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── README.md
+```
 
-## Security and config hygiene
+## Demo Checklist
 
-- No credentials are hardcoded
-- Runtime configuration is environment-driven
-- `.env` is ignored by Git
-- `data/`, `runs/`, `mlruns/`, and local artifacts are excluded from version control
-- Docker build context is trimmed with [`.dockerignore`](/Users/joshu/aerotrack/.dockerignore)
-- Docker services include healthchecks for both the API and MLflow
+For an interview or portfolio walkthrough:
 
-## Deployment notes
+1. Show the README performance and ONNX sections.
+2. Run `docker-compose up --build`.
+3. Hit `GET /health`.
+4. Run `POST /detect` on a VisDrone frame.
+5. Run `POST /track` on a short clip and show persistent IDs.
+6. Open MLflow and show run history plus logged artifacts.
+7. Open `notebooks/03_robustness.ipynb` and explain field degradation testing.
 
-For deployment-oriented guidance, see [docs/deploy.md](/Users/joshu/aerotrack/docs/deploy.md).
+Supporting docs:
 
-Additional deployment helpers:
-
-- production-oriented env template: [.env.production.example](/Users/joshu/aerotrack/.env.production.example)
-- saved sample API responses: [examples/detect_response.json](/Users/joshu/aerotrack/examples/detect_response.json), [examples/track_response.json](/Users/joshu/aerotrack/examples/track_response.json)
-- saved demo commands: [examples/demo_commands.md](/Users/joshu/aerotrack/examples/demo_commands.md)
-
-## Supporting files
-
-- Starter EDA notebook: [notebooks/01_eda.ipynb](/Users/joshu/aerotrack/notebooks/01_eda.ipynb)
-- Dataset instructions: [data/README.md](/Users/joshu/aerotrack/data/README.md)
-- Training entrypoint: [src/train.py](/Users/joshu/aerotrack/src/train.py)
-- Tracking pipeline: [src/track.py](/Users/joshu/aerotrack/src/track.py)
-- FastAPI application: [api/main.py](/Users/joshu/aerotrack/api/main.py)
-- Demo guide: [docs/demo.md](/Users/joshu/aerotrack/docs/demo.md)
-- Deployment guide: [docs/deploy.md](/Users/joshu/aerotrack/docs/deploy.md)
-- Operator runbook: [docs/runbook.md](/Users/joshu/aerotrack/docs/runbook.md)
-- Smoke-test clip helper: [scripts/make_smoke_clip.py](/Users/joshu/aerotrack/scripts/make_smoke_clip.py)
+- [docs/demo.md](docs/demo.md)
+- [docs/demo_capture.md](docs/demo_capture.md)
+- [docs/deploy.md](docs/deploy.md)
+- [docs/runbook.md](docs/runbook.md)
+- [docs/windows_gpu_setup.md](docs/windows_gpu_setup.md)
