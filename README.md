@@ -6,10 +6,6 @@
 
 Current status: the full system is operational and browser-demo ready. The repo includes the stronger RTX 4070 Ti-trained checkpoint at `models/aerotrack-detector-demo-v2.pt` for local evaluation and a lighter `yolov8n.pt` option for CPU-friendly hosted demos.
 
-## Demo Video
-
-<!-- TODO: replace with YouTube embed -->
-
 ![AeroTrack browser demo](docs/images/aerotrack-demo-samples.png)
 
 ## Model Performance
@@ -366,3 +362,7 @@ Supporting docs:
 - [docs/deploy.md](docs/deploy.md)
 - [docs/runbook.md](docs/runbook.md)
 - [docs/windows_gpu_setup.md](docs/windows_gpu_setup.md)
+
+## Future Work
+
+- Record and embed a short walkthrough video after regenerating the final mAP and inference benchmark tables on the target local environment.
