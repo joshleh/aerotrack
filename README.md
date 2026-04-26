@@ -102,7 +102,7 @@ This project is intentionally framed around Anduril-relevant capabilities: aeria
 
 ## Robustness
 
-The most deployment-oriented artifact is [notebooks/03_robustness.ipynb](notebooks/03_robustness.ipynb). It loads representative VisDrone validation frames, applies progressive synthetic fog, low light, and motion blur with Albumentations, runs the detector on original and degraded images, and plots detection retention by severity.
+The most deployment-oriented artifact is [notebooks/02_robustness.ipynb](notebooks/02_robustness.ipynb). It loads representative VisDrone validation frames, applies progressive synthetic fog, low light, and motion blur with Albumentations, runs the detector on original and degraded images, and plots detection retention by severity.
 
 Those degradations map to operational conditions:
 
@@ -113,7 +113,7 @@ Those degradations map to operational conditions:
 Run it locally with:
 
 ```bash
-jupyter notebook notebooks/03_robustness.ipynb
+jupyter notebook notebooks/02_robustness.ipynb
 ```
 
 ## How To Run
@@ -334,7 +334,7 @@ aerotrack/
 │   └── aerotrack-detector-validation.pt
 ├── notebooks/
 │   ├── 01_eda.ipynb
-│   └── 03_robustness.ipynb
+│   └── 02_robustness.ipynb
 ├── scripts/
 │   ├── benchmark_inference.py
 │   ├── evaluate_mAP.py
@@ -357,7 +357,7 @@ For an interview or portfolio walkthrough:
 4. Run `POST /detect` on a VisDrone frame.
 5. Run `POST /track` on a short clip and show persistent IDs.
 6. Open MLflow and show run history plus logged artifacts.
-7. Open `notebooks/03_robustness.ipynb` and explain field degradation testing.
+7. Open `notebooks/02_robustness.ipynb` and explain field degradation testing.
 
 Supporting docs:
 
